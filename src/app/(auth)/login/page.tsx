@@ -68,10 +68,12 @@ export default function LoginPage() {
     try {
       const result = await login(email.trim(), password);
       
-      if (!result.success) {
+      if (result.success) {
+        // Redirect immediately after successful login
+        router.push('/dashboard');
+      } else {
         setErrors({ general: result.message || 'Error al iniciar sesión' });
       }
-      // Success redirect is handled by useEffect above
     } catch (error) {
       setErrors({ general: 'Error de conexión. Intente nuevamente.' });
     } finally {
