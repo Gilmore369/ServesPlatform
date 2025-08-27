@@ -37,31 +37,33 @@ export default function DashboardPage() {
   
   const dashboardRef = useRef<HTMLDivElement>(null);
 
-  // Redirect to login if not authenticated
-  if (!authLoading && !isAuthenticated) {
-    router.push('/login');
-    return null;
-  }
+  // Simple authentication check using localStorage
+  const [localUser, setLocalUser] = useState(null);
+  
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
+    
+    if (!storedUser || !storedToken) {
+      router.push('/login');
+      return;
+    }
+    
+    try {
+      setLocalUser(JSON.parse(storedUser));
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      router.push('/login');
+    }
+  }, [router]);
 
-  // Show loading screen while authentication is being checked
-  if (authLoading) {
+  // Show loading screen while checking authentication
+  if (!localUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Verificando autenticación...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading screen if user is not available yet
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando datos del usuario...</p>
         </div>
       </div>
     );
@@ -211,7 +213,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="mb-4 sm:mb-0">
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 transition-all duration-300 hover:text-blue-600">
-              ¡Bienvenido de vuelta, {user?.nombre}!
+              ¡Bienvenido de vuelta, {localUser?.nombre}!
             </h2>
             <p className="text-gray-600 transition-colors duration-300 text-sm sm:text-base">
               Aquí tienes un resumen de tus proyectos y actividades.
