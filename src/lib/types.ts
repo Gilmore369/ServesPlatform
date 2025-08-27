@@ -8,8 +8,9 @@ export interface APIResponse<T = any> {
 }
 
 export interface AuthResponse {
-  jwt: string;
+  token: string;
   user: User;
+  message?: string;
 }
 
 export interface User {

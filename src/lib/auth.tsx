@@ -42,9 +42,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const response = await apiClient.login(email, password);
 
-      // The API returns data in the format: { ok: true, data: { jwt, user } }
-      if (response && response.jwt && response.user) {
-        JWTManager.setToken(response.jwt);
+      // The API returns data in the format: { ok: true, data: { token, user } }
+      if (response && response.token && response.user) {
+        JWTManager.setToken(response.token);
         JWTManager.setUser(response.user);
         setUser(response.user);
         
