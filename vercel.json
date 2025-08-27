@@ -1,8 +1,9 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install",
+  "installCommand": "npm install --production=false",
   "framework": "nextjs",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
   "functions": {
     "app/api/**/*.ts": {
       "runtime": "nodejs18.x"
