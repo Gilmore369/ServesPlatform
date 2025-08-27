@@ -1,7 +1,8 @@
 {
-  "buildCommand": "npm run build",
+  "version": 2,
+  "buildCommand": "npm run build:vercel",
   "outputDirectory": ".next",
-  "installCommand": "npm install --production=false",
+  "installCommand": "npm ci",
   "framework": "nextjs",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
   "functions": {

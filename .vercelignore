@@ -1,0 +1,20 @@
+# Ignore test files and directories
+**/__tests__/**
+**/*.test.*
+**/*.spec.*
+src/test/**
+vitest.config.ts
+playwright.config.ts
+
+# Ignore development files
+.env.local
+.env.development
+
+# Ignore build artifacts
+.next/
+out/
+node_modules/.cache/
+
+# Ignore documentation
+*.md
+!README.md
