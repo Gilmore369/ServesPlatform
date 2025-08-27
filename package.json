@@ -26,7 +26,6 @@
     "optimize": "node scripts/optimize-bundle.js",
     "production-check": "npm run validate && npm run test && npm run build && npm run optimize",
     "precommit": "npm run lint && npm run type-check && npm run test",
-
     "postbuild": "echo 'Build completed successfully!'",
     "deploy:vercel": "vercel --prod",
     "deploy:production": "npm run production-check && npm run deploy:vercel",
