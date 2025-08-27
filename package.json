@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "prebuild": "node scripts/prebuild.js",
+    "build": "npm run prebuild && next build",
     "build:vercel": "next build",
     "build:analyze": "cross-env ANALYZE=true npm run build",
     "build:production": "npm run clean && npm run validate && npm run test:unit && npm run build && npm run optimize",
