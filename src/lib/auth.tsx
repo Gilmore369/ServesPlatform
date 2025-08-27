@@ -35,15 +35,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
+      console.log('🔑 AuthContext: Iniciando proceso de login...');
       setIsLoading(true);
       
       const { apiClient } = await import('./apiClient');
       const { auditLogger, AuditAction } = await import('./auditLog');
       
+      console.log('📡 AuthContext: Llamando a apiClient.login...');
       const response = await apiClient.login(email, password);
+      
+      console.log('📨 AuthContext: Respuesta de API:', response);
 
       // The API returns data in the format: { ok: true, data: { token, user } }
       if (response && response.token && response.user) {
+        console.log('✅ AuthContext: Login exitoso, guardando datos...');
         JWTManager.setToken(response.token);
         JWTManager.setUser(response.user);
         setUser(response.user);
@@ -52,14 +57,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         auditLogger.setCurrentUser(response.user as User);
         await auditLogger.logAuth(AuditAction.USER_LOGIN, email);
         
+        console.log('🎉 AuthContext: Login completado exitosamente');
         return { success: true };
       } else {
+        console.log('❌ AuthContext: Login falló - respuesta inválida:', response);
         // Log failed login attempt
         await auditLogger.logAuth(AuditAction.LOGIN_FAILED, email);
         return { success: false, message: 'Login failed - Invalid credentials' };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('🚨 AuthContext: Error en login:', error);
       
       // Log failed login attempt
       try {

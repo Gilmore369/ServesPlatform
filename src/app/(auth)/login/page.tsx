@@ -66,15 +66,22 @@ export default function LoginPage() {
     setErrors({});
 
     try {
+      console.log('🔐 Iniciando login con:', { email: email.trim(), password: '***' });
+      
       const result = await login(email.trim(), password);
       
+      console.log('📝 Resultado del login:', result);
+      
       if (result.success) {
+        console.log('✅ Login exitoso, redirigiendo al dashboard...');
         // Redirect immediately after successful login
         router.push('/dashboard');
       } else {
+        console.log('❌ Login falló:', result.message);
         setErrors({ general: result.message || 'Error al iniciar sesión' });
       }
     } catch (error) {
+      console.error('🚨 Error en login:', error);
       setErrors({ general: 'Error de conexión. Intente nuevamente.' });
     } finally {
       setIsSubmitting(false);

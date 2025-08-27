@@ -64,12 +64,16 @@ class APIClient {
     });
 
     const url = `${this.baseURL}?${params.toString()}`;
+    
+    console.log('🔗 APIClient: URL de petición:', url);
 
     try {
       const response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
       });
+      
+      console.log('📡 APIClient: Status de respuesta:', response.status);
       
       // Parse response
       let data: T;
@@ -106,10 +110,13 @@ class APIClient {
    * Authentication endpoints
    */
   async login(email: string, password: string): Promise<AuthResponse> {
-    return this.request<AuthResponse>('', {
+    console.log('🌐 APIClient: Enviando petición de login...');
+    const result = await this.request<AuthResponse>('', {
       body: { action: 'auth', email, password },
       requireAuth: false,
     });
+    console.log('🌐 APIClient: Respuesta recibida:', result);
+    return result;
   }
 
   async whoami(): Promise<APIResponse> {
