@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Connection</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test API Connection - ServesPlatform</h1>
+    
+    <div>
+        <button onclick="testMaterials()">🧱 Test Materiales</button>
+        <button onclick="testAuth()">🔐 Test Auth</button>
+        <button onclick="testWhoAmI()">👤 Test WhoAmI</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwZ4fWws4N-4BL8f1dmG6tBVbo8KEfcS3e1U6MPSSLSYv2GZaXNdhsb9B6BpzDechnAyw/exec';
+        const API_TOKEN = 'demo-token-2024';
+
+        function addResult(title, success, data) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${success ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        async function testMaterials() {
+            try {
+                console.log('Testing materials...');
+                const url = `${API_URL}?token=${API_TOKEN}&action=crud&table=Materiales&operation=list`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    addResult('✅ Materiales - SUCCESS', true, {
+                        message: 'API funcionando correctamente',
+                        materialesEncontrados: data.data?.length || 0,
+                        primerosElementos: data.data?.slice(0, 2) || []
+                    });
+                } else {
+                    addResult('❌ Materiales - ERROR', false, data);
+                }
+            } catch (error) {
+                addResult('❌ Materiales - NETWORK ERROR', false, {
+                    error: error.message,
+                    tip: 'Verifica que el Google Apps Script esté desplegado correctamente'
+                });
+            }
+        }
+
+        async function testAuth() {
+            try {
+                console.log('Testing auth...');
+                const url = `${API_URL}?token=${API_TOKEN}&action=auth&email=admin@servesplatform.com&password=admin123`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    addResult('✅ Auth - SUCCESS', true, {
+                        message: 'Autenticación funcionando',
+                        usuario: data.data?.user?.nombre || 'N/A'
+                    });
+                } else {
+                    addResult('❌ Auth - ERROR', false, data);
+                }
+            } catch (error) {
+                addResult('❌ Auth - NETWORK ERROR', false, {
+                    error: error.message
+                });
+            }
+        }
+
+        async function testWhoAmI() {
+            try {
+                console.log('Testing whoami...');
+                const url = `${API_URL}?token=${API_TOKEN}&action=whoami`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    addResult('✅ WhoAmI - SUCCESS', true, {
+                        message: 'Usuario identificado',
+                        usuario: data.data
+                    });
+                } else {
+                    addResult('❌ WhoAmI - ERROR', false, data);
+                }
+            } catch (error) {
+                addResult('❌ WhoAmI - NETWORK ERROR', false, {
+                    error: error.message
+                });
+            }
+        }
+
+        // Test automático al cargar
+        window.onload = function() {
+            console.log('🚀 Iniciando tests automáticos...');
+            setTimeout(testMaterials, 1000);
+        };
+    </script>
+</body>
+</html>
