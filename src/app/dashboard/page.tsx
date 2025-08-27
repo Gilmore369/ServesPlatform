@@ -7,6 +7,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    stats: null,
+    projects: [],
+    tasks: [],
+    loading: true,
+    error: null
+  });
   
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -49,6 +56,44 @@ export default function DashboardPage() {
     checkAuthentication();
   }, [router]);
 
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!currentUser) return;
+      
+      try {
+        setDashboardData(prev => ({ ...prev, loading: true, error: null }));
+        
+        // Fetch dashboard stats, projects, and tasks in parallel
+        const [statsResponse, projectsResponse, tasksResponse] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/proyectos'),
+          fetch('/api/tareas')
+        ]);
+
+        const stats = statsResponse.ok ? await statsResponse.json() : null;
+        const projects = projectsResponse.ok ? await projectsResponse.json() : [];
+        const tasks = tasksResponse.ok ? await tasksResponse.json() : [];
+
+        setDashboardData({
+          stats: stats?.data || null,
+          projects: projects?.data || [],
+          tasks: tasks?.data || [],
+          loading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setDashboardData(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Error al cargar los datos del dashboard'
+        }));
+      }
+    };
+
+    fetchDashboardData();
+  }, [currentUser]);
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -73,17 +118,50 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Mock data for dashboard
-  const mockMetrics = {
-    totalProjects: 12,
-    activeProjects: 8,
-    completedTasks: 156,
-    pendingTasks: 23,
-    teamMembers: 15,
-    efficiency: 87
+  // Show error message if there's an error loading dashboard data
+  if (dashboardData.error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error al cargar el dashboard</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{dashboardData.error}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Use real data or fallback to mock data
+  const metrics = dashboardData.stats || {
+    totalProjects: 0,
+    activeProjects: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
+    teamMembers: 0,
+    efficiency: 0
   };
 
-  const mockProjects = [
+  const projects = dashboardData.projects.length > 0 ? dashboardData.projects : [
     {
       id: '1',
       nombre: 'Construcción Edificio Central',
@@ -110,7 +188,7 @@ export default function DashboardPage() {
     }
   ];
 
-  const mockTasks = [
+  const tasks = dashboardData.tasks.length > 0 ? dashboardData.tasks : [
     {
       id: '1',
       titulo: 'Revisión de planos estructurales',
@@ -185,7 +263,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Proyectos</p>
-                <p className="text-2xl font-bold text-gray-900">{mockMetrics.totalProjects}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.totalProjects}</p>
               </div>
             </div>
           </div>
@@ -201,7 +279,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Proyectos Activos</p>
-                <p className="text-2xl font-bold text-gray-900">{mockMetrics.activeProjects}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.activeProjects}</p>
               </div>
             </div>
           </div>
@@ -217,7 +295,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Tareas Completadas</p>
-                <p className="text-2xl font-bold text-gray-900">{mockMetrics.completedTasks}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.completedTasks}</p>
               </div>
             </div>
           </div>
@@ -233,7 +311,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Tareas Pendientes</p>
-                <p className="text-2xl font-bold text-gray-900">{mockMetrics.pendingTasks}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.pendingTasks}</p>
               </div>
             </div>
           </div>
@@ -249,7 +327,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Equipo</p>
-                <p className="text-2xl font-bold text-gray-900">{mockMetrics.teamMembers}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.teamMembers}</p>
               </div>
             </div>
           </div>
@@ -265,7 +343,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Eficiencia</p>
-                <p className="text-2xl font-bold text-gray-900">{mockMetrics.efficiency}%</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.efficiency}%</p>
               </div>
             </div>
           </div>
@@ -280,7 +358,7 @@ export default function DashboardPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {mockProjects.map((project) => (
+                {projects.map((project) => (
                   <div key={project.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{project.nombre}</h4>
@@ -306,7 +384,10 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div className="mt-6">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200">
+                <button 
+                  onClick={() => router.push('/proyectos')}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200"
+                >
                   Ver Todos los Proyectos
                 </button>
               </div>
@@ -320,7 +401,7 @@ export default function DashboardPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {mockTasks.map((task) => (
+                {tasks.map((task) => (
                   <div key={task.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{task.titulo}</h4>
@@ -341,7 +422,10 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div className="mt-6">
-                <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200">
+                <button 
+                  onClick={() => router.push('/tareas')}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200"
+                >
                   Ver Todas las Tareas
                 </button>
               </div>
@@ -356,28 +440,40 @@ export default function DashboardPage() {
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200">
+              <button 
+                onClick={() => router.push('/proyectos/nuevo')}
+                className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+              >
                 <svg className="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span className="font-medium text-blue-900">Nuevo Proyecto</span>
               </button>
               
-              <button className="flex items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200">
+              <button 
+                onClick={() => router.push('/tareas/nueva')}
+                className="flex items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+              >
                 <svg className="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-medium text-green-900">Nueva Tarea</span>
               </button>
               
-              <button className="flex items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200">
+              <button 
+                onClick={() => router.push('/admin/usuarios')}
+                className="flex items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200"
+              >
                 <svg className="w-6 h-6 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 <span className="font-medium text-purple-900">Gestionar Equipo</span>
               </button>
               
-              <button className="flex items-center justify-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200">
+              <button 
+                onClick={() => router.push('/reportes')}
+                className="flex items-center justify-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
+              >
                 <svg className="w-6 h-6 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z" />
                 </svg>
