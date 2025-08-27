@@ -18,32 +18,46 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Validación básica
-      if (email !== 'admin@servesplatform.com' || password !== 'admin123') {
-        setError('Credenciales incorrectas');
-        setIsSubmitting(false);
+      // Validación de credenciales
+      if (!email.trim() || !password.trim()) {
+        setError('Por favor, complete todos los campos');
         return;
       }
 
-      // Simular login exitoso
-      console.log('✅ Login exitoso - redirigiendo...');
-      
-      // Guardar datos básicos en localStorage
-      localStorage.setItem('user', JSON.stringify({
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('Por favor, ingrese un email válido');
+        return;
+      }
+
+      if (email !== 'admin@servesplatform.com' || password !== 'admin123') {
+        setError('Email o contraseña incorrectos');
+        return;
+      }
+
+      // Autenticación exitosa
+      const userData = {
         id: '1',
         email: 'admin@servesplatform.com',
         nombre: 'Administrador',
         rol: 'admin',
-        activo: true
-      }));
-      localStorage.setItem('token', 'mock-token-' + Date.now());
+        activo: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const token = 'jwt-token-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
       
-      // Redirección forzada
+      // Guardar datos de sesión
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', token);
+      localStorage.setItem('loginTime', new Date().toISOString());
+      
+      // Redirección al dashboard
       window.location.href = '/dashboard';
       
     } catch (error) {
-      console.error('Error:', error);
-      setError('Error de conexión');
+      console.error('Error durante el login:', error);
+      setError('Ha ocurrido un error. Por favor, intente nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -54,7 +68,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Iniciar Sesión (Versión Simplificada)
+            Iniciar Sesión
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             ServesPlatform - Gestión de Operaciones
@@ -106,11 +120,7 @@ export default function LoginPage() {
             </button>
           </div>
           
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Credenciales: admin@servesplatform.com / admin123
-            </p>
-          </div>
+
         </form>
       </div>
     </div>

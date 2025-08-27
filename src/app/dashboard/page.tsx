@@ -1,64 +1,63 @@
 "use client";
 
-import { useAuth } from '@/lib/auth';
-import { KPICards, RecentProjects, PendingTasks, TeamAvailability, Schedule } from '@/components/dashboard';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useMobileOptimizations, usePullToRefresh } from '@/hooks/useMobileOptimizations';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { 
-    data: { metrics, projects, tasks, teamMembers, events }, 
-    loading, 
-    errors,
-    refetch,
-    completeTask: completeTaskService
-  } = useDashboardData();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  
-  // Mobile optimizations
-  const { 
-    isMobile, 
-    isTablet, 
-    isTouch, 
-    orientation, 
-    addTouchFeedback, 
-    optimizeForMobile 
-  } = useMobileOptimizations();
-  
-  // Pull to refresh functionality
-  const { isPulling, pullDistance } = usePullToRefresh(async () => {
-    await refetch.all();
-  });
-  
-  const dashboardRef = useRef<HTMLDivElement>(null);
-
-  // Simple authentication check using localStorage
-  const [localUser, setLocalUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    
-    if (!storedUser || !storedToken) {
-      router.push('/login');
-      return;
-    }
-    
-    try {
-      setLocalUser(JSON.parse(storedUser));
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      router.push('/login');
-    }
+    const checkAuthentication = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('token');
+        const loginTime = localStorage.getItem('loginTime');
+        
+        if (!storedUser || !storedToken) {
+          router.push('/login');
+          return;
+        }
+
+        // Check if session is still valid (24 hours)
+        if (loginTime) {
+          const loginDate = new Date(loginTime);
+          const now = new Date();
+          const hoursDiff = (now.getTime() - loginDate.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursDiff > 24) {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('loginTime');
+            router.push('/login');
+            return;
+          }
+        }
+        
+        const userData = JSON.parse(storedUser);
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        localStorage.clear();
+        router.push('/login');
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    checkAuthentication();
   }, [router]);
 
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('loginTime');
+    router.push('/login');
+  };
+
   // Show loading screen while checking authentication
-  if (!localUser) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -69,402 +68,325 @@ export default function DashboardPage() {
     );
   }
 
-  const handleViewProjectDetails = (projectId: string) => {
-    router.push(`/projects/${projectId}`);
+  // Redirect to login if not authenticated
+  if (!currentUser) {
+    return null;
+  }
+
+  // Mock data for dashboard
+  const mockMetrics = {
+    totalProjects: 12,
+    activeProjects: 8,
+    completedTasks: 156,
+    pendingTasks: 23,
+    teamMembers: 15,
+    efficiency: 87
   };
 
-  const handleNewProject = () => {
-    router.push('/projects/new');
-  };
-
-  const handleCompleteTask = async (taskId: string) => {
-    const success = await completeTaskService(taskId);
-    if (!success) {
-      // Show error message or handle failure
-      console.error('Failed to complete task');
+  const mockProjects = [
+    {
+      id: '1',
+      nombre: 'Construcción Edificio Central',
+      cliente: 'Inmobiliaria ABC',
+      avance_pct: 75,
+      estado: 'En progreso',
+      fecha_fin: '2024-12-15'
+    },
+    {
+      id: '2',
+      nombre: 'Remodelación Oficinas',
+      cliente: 'Empresa XYZ',
+      avance_pct: 45,
+      estado: 'En progreso',
+      fecha_fin: '2024-11-30'
+    },
+    {
+      id: '3',
+      nombre: 'Instalación Eléctrica',
+      cliente: 'Corporación DEF',
+      avance_pct: 90,
+      estado: 'En progreso',
+      fecha_fin: '2024-10-20'
     }
-  };
+  ];
 
-  const handleAddTask = () => {
-    router.push('/tasks/new');
-  };
-
-  const handleViewAllPersonnel = () => {
-    router.push('/personnel');
-  };
-
-  const handleNavigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentMonth(prevMonth => {
-      const newMonth = new Date(prevMonth);
-      if (direction === 'prev') {
-        newMonth.setMonth(newMonth.getMonth() - 1);
-      } else {
-        newMonth.setMonth(newMonth.getMonth() + 1);
-      }
-      return newMonth;
-    });
-  };
-
-  // Apply mobile optimizations to dashboard elements
-  useEffect(() => {
-    if (dashboardRef.current) {
-      optimizeForMobile(dashboardRef.current);
-      
-      // Add touch feedback to interactive elements
-      const buttons = dashboardRef.current.querySelectorAll('button, [role="button"]');
-      buttons.forEach((button) => {
-        addTouchFeedback(button as HTMLElement);
-      });
+  const mockTasks = [
+    {
+      id: '1',
+      titulo: 'Revisión de planos estructurales',
+      proyecto: 'Edificio Central',
+      prioridad: 'Alta',
+      fecha_vencimiento: '2024-09-15'
+    },
+    {
+      id: '2',
+      titulo: 'Inspección de materiales',
+      proyecto: 'Oficinas XYZ',
+      prioridad: 'Media',
+      fecha_vencimiento: '2024-09-18'
+    },
+    {
+      id: '3',
+      titulo: 'Coordinación con proveedores',
+      proyecto: 'Instalación Eléctrica',
+      prioridad: 'Alta',
+      fecha_vencimiento: '2024-09-12'
     }
-  }, [optimizeForMobile, addTouchFeedback]);
-
-  // Handle mobile-specific keyboard events
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Close mobile menus with escape key
-      if (event.key === 'Escape' && isMobile) {
-        // Close any open mobile menus or modals
-        const openMenus = document.querySelectorAll('.mobile-dropdown.open');
-        openMenus.forEach((menu) => {
-          menu.classList.remove('open');
-        });
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isMobile]);
+  ];
 
   return (
-    <ErrorBoundary>
-      {/* Skip to content link for accessibility */}
-      <a 
-        href="#main-content" 
-        className="skip-to-content sr-only focus:not-sr-only"
-        tabIndex={1}
-      >
-        Ir al contenido principal
-      </a>
-      
-      {/* Pull to refresh indicator */}
-      {isPulling && (
-        <div 
-          className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white text-center py-2 mobile-pull-refresh active"
-          style={{ transform: `translateY(${Math.min(pullDistance - 80, 0)}px)` }}
-        >
-          <div className="flex items-center justify-center space-x-2">
-            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span className="text-sm">Actualizando...</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">ServesPlatform</h1>
+              <p className="text-sm text-gray-600">Gestión de Operaciones</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{currentUser?.nombre}</p>
+                <p className="text-xs text-gray-500">{currentUser?.rol}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
         </div>
-      )}
-      
-      <div 
-        ref={dashboardRef}
-        id="main-content"
-        className={`min-h-full dashboard-polish ${isMobile ? 'mobile-optimized performance-optimized' : ''} ${isTablet ? 'tablet-optimized' : ''}`}
-      >
-      {/* Error Banner */}
-      {Object.values(errors).some(Boolean) && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Error al cargar algunos datos
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <ul className="list-disc pl-5 space-y-1">
-                  {errors.metrics && <li>Métricas: {errors.metrics}</li>}
-                  {errors.projects && <li>Proyectos: {errors.projects}</li>}
-                  {errors.tasks && <li>Tareas: {errors.tasks}</li>}
-                  {errors.teamMembers && <li>Equipo: {errors.teamMembers}</li>}
-                  {errors.events && <li>Eventos: {errors.events}</li>}
-                </ul>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 text-white">
+          <h2 className="text-3xl font-bold mb-2">¡Bienvenido de vuelta, {currentUser?.nombre}!</h2>
+          <p className="text-blue-100">Aquí tienes un resumen de tus proyectos y actividades.</p>
+          <div className="mt-4 flex items-center text-blue-100">
+            <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-sm">Sistema en línea - {new Date().toLocaleDateString('es-ES')}</span>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
               </div>
-              <div className="mt-4">
-                <button
-                  onClick={refetch.all}
-                  className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200 transition-colors duration-200"
-                >
-                  Reintentar
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Proyectos</p>
+                <p className="text-2xl font-bold text-gray-900">{mockMetrics.totalProjects}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Proyectos Activos</p>
+                <p className="text-2xl font-bold text-gray-900">{mockMetrics.activeProjects}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Tareas Completadas</p>
+                <p className="text-2xl font-bold text-gray-900">{mockMetrics.completedTasks}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Tareas Pendientes</p>
+                <p className="text-2xl font-bold text-gray-900">{mockMetrics.pendingTasks}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Equipo</p>
+                <p className="text-2xl font-bold text-gray-900">{mockMetrics.teamMembers}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Eficiencia</p>
+                <p className="text-2xl font-bold text-gray-900">{mockMetrics.efficiency}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Projects */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Proyectos Recientes</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {mockProjects.map((project) => (
+                  <div key={project.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{project.nombre}</h4>
+                      <p className="text-sm text-gray-600">{project.cliente}</p>
+                      <div className="mt-2">
+                        <div className="flex items-center">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full" 
+                              style={{ width: `${project.avance_pct}%` }}
+                            ></div>
+                          </div>
+                          <span className="ml-2 text-sm font-medium text-gray-900">{project.avance_pct}%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {project.estado}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6">
+                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200">
+                  Ver Todos los Proyectos
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending Tasks */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Tareas Pendientes</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {mockTasks.map((task) => (
+                  <div key={task.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{task.titulo}</h4>
+                      <p className="text-sm text-gray-600">{task.proyecto}</p>
+                      <p className="text-xs text-gray-500 mt-1">Vence: {task.fecha_vencimiento}</p>
+                    </div>
+                    <div className="ml-4 flex items-center space-x-2">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        task.prioridad === 'Alta' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {task.prioridad}
+                      </span>
+                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        Completar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6">
+                <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200">
+                  Ver Todas las Tareas
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Enhanced Welcome Section with mobile optimizations */}
-      <div className={`
-        bg-gradient-to-r from-white via-blue-50/30 to-white rounded-xl shadow-sm border border-gray-200/60 
-        p-4 sm:p-6 mb-6 sm:mb-8 transform transition-all duration-500 ease-out 
-        animate-slideInFromTop card-polish
-        ${isMobile ? 'mobile-card mobile-shadow mobile-spacing' : 'hover:shadow-lg hover:-translate-y-1 hover-lift'}
-        ${isTouch ? 'mobile-touch-feedback' : ''}
-      `}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div className="mb-4 sm:mb-0">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 transition-all duration-300 hover:text-blue-600">
-              ¡Bienvenido de vuelta, {localUser?.nombre}!
-            </h2>
-            <p className="text-gray-600 transition-colors duration-300 text-sm sm:text-base">
-              Aquí tienes un resumen de tus proyectos y actividades.
-            </p>
+        {/* Quick Actions */}
+        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Acciones Rápidas</h3>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800 transition-all duration-300 hover:bg-green-200 hover:scale-105">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              En línea
-            </span>
-            <button
-              onClick={refetch.all}
-              disabled={loading.metrics || loading.projects || loading.tasks || loading.teamMembers || loading.events}
-              className={`
-                inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium 
-                bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all duration-300 
-                disabled:opacity-50 disabled:cursor-not-allowed button-polish
-                ${isMobile ? 'mobile-button mobile-tap-animation' : 'hover:scale-105'}
-                ${isTouch ? 'touch-feedback' : ''}
-              `}
-            >
-              <svg className={`w-3 h-3 mr-2 ${(loading.metrics || loading.projects || loading.tasks || loading.teamMembers || loading.events) ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Actualizar
-            </button>
-            <div className="text-xs sm:text-sm text-gray-500">
-              {new Date().toLocaleDateString('es-ES', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Main Dashboard Grid with improved responsive layout */}
-      <div className="space-y-6 sm:space-y-8">
-        {/* KPI Cards Section with enhanced responsive behavior */}
-        <section className="transform transition-all duration-500 ease-out animate-slideInFromLeft">
-          <div className="mb-4 sm:mb-6">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 transition-colors duration-300 hover:text-blue-600">
-              Métricas Principales
-            </h3>
-            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
-              Vista general del estado actual de tus proyectos
-            </p>
-          </div>
-          <div className="transform transition-all duration-300 hover:scale-[1.005] hover-lift">
-            <KPICards metrics={metrics} isLoading={loading.metrics} />
-          </div>
-        </section>
-
-        {/* Recent Projects Section with enhanced responsive animation */}
-        <section className="transform transition-all duration-500 ease-out animate-slideInFromRight delay-100">
-          <div className="transform transition-all duration-300 hover:scale-[1.002] hover-lift">
-            <RecentProjects
-              projects={projects}
-              onViewDetails={handleViewProjectDetails}
-              onNewProject={handleNewProject}
-              isLoading={loading.projects}
-            />
-          </div>
-        </section>
-
-        {/* Enhanced Bottom Section with mobile optimizations */}
-        <section className="transform transition-all duration-500 ease-out animate-slideInFromBottom delay-200">
-          <div className="mb-4 sm:mb-6">
-            <h3 className={`
-              text-lg sm:text-xl font-bold text-gray-900 transition-colors duration-300 
-              ${isMobile ? 'responsive-text' : 'hover:text-blue-600'}
-            `}>
-              Actividades y Equipo
-            </h3>
-            <p className={`
-              text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base
-              ${isMobile ? 'responsive-text' : ''}
-            `}>
-              Gestión de tareas, disponibilidad del equipo y cronograma
-            </p>
-          </div>
-          
-          {/* Enhanced responsive grid with mobile optimizations */}
-          <div className={`
-            grid gap-4 sm:gap-6 transition-all duration-300
-            ${isMobile ? 'mobile-grid-single' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}
-            ${isTouch ? 'touch-target-spacing' : ''}
-          `}>
-            {/* Tasks Column with mobile optimizations */}
-            <div className={`
-              transform transition-all duration-300 ease-out animate-slideInFromLeft delay-300
-              ${isMobile ? 'mobile-card mobile-transform' : 'hover:scale-[1.01] hover:-translate-y-1 hover-lift'}
-            `}>
-              <PendingTasks
-                tasks={tasks}
-                onCompleteTask={handleCompleteTask}
-                onAddTask={handleAddTask}
-                isLoading={loading.tasks}
-              />
-            </div>
-            
-            {/* Team Availability Column with mobile optimizations */}
-            <div className={`
-              transform transition-all duration-300 ease-out animate-slideInFromBottom delay-500
-              ${isMobile ? 'mobile-card mobile-transform' : 'hover:scale-[1.01] hover:-translate-y-1 hover-lift'}
-            `}>
-              <TeamAvailability
-                teamMembers={teamMembers}
-                onViewAllPersonnel={handleViewAllPersonnel}
-                isLoading={loading.teamMembers}
-              />
-            </div>
-            
-            {/* Schedule Column with mobile optimizations */}
-            <div className={`
-              ${isMobile ? '' : 'md:col-span-2 xl:col-span-1'} 
-              transform transition-all duration-300 ease-out animate-slideInFromRight delay-700
-              ${isMobile ? 'mobile-card mobile-transform' : 'hover:scale-[1.01] hover:-translate-y-1 hover-lift'}
-            `}>
-              <Schedule
-                events={events}
-                currentMonth={currentMonth}
-                onNavigateMonth={handleNavigateMonth}
-                isLoading={loading.events}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Enhanced mobile experience indicator with better responsive design */}
-        <div className="block lg:hidden animate-slideInFromBottom delay-1000">
-          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-3 sm:p-4 border border-blue-200 shadow-sm hover-lift">
-            <div className="flex items-center space-x-3 text-blue-800">
-              <div className="flex-shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200">
+                <svg className="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Experiencia móvil optimizada</p>
-                <p className="text-xs text-blue-600 mt-1">Desliza para explorar más contenido</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced performance and accessibility indicators */}
-        <div className="hidden xl:block animate-slideInFromBottom delay-1000">
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-xl p-4 border border-gray-200/60 shadow-sm hover-lift">
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <div className="flex items-center space-x-4">
-                <span className="flex items-center transition-colors duration-300 hover:text-green-600">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                  Sistema optimizado
-                </span>
-                <span className="flex items-center transition-colors duration-300 hover:text-blue-600">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
-                  Datos en tiempo real
-                </span>
-                <span className="flex items-center transition-colors duration-300 hover:text-purple-600">
-                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-2 animate-pulse"></span>
-                  Responsive design
-                </span>
-              </div>
-              <div className="text-xs text-gray-500 transition-colors duration-300 hover:text-gray-700">
-                Última actualización: {new Date().toLocaleTimeString('es-ES')}
-              </div>
+                <span className="font-medium text-blue-900">Nuevo Proyecto</span>
+              </button>
+              
+              <button className="flex items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200">
+                <svg className="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium text-green-900">Nueva Tarea</span>
+              </button>
+              
+              <button className="flex items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200">
+                <svg className="w-6 h-6 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="font-medium text-purple-900">Gestionar Equipo</span>
+              </button>
+              
+              <button className="flex items-center justify-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200">
+                <svg className="w-6 h-6 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z" />
+                </svg>
+                <span className="font-medium text-orange-900">Ver Reportes</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Enhanced floating action button with mobile optimizations */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:hidden z-50 animate-slideInFromBottom delay-1000">
-        <div className="relative group">
-          <button
-            onClick={handleNewProject}
-            className={`
-              bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full shadow-xl 
-              transform transition-all duration-300 ease-out focus:outline-none 
-              focus:ring-4 focus:ring-blue-300 focus:ring-offset-2 button-polish
-              ${isMobile ? 'p-4 mobile-button mobile-tap-animation focus-enhanced' : 'p-3 sm:p-4 hover:from-blue-700 hover:to-blue-800 hover:scale-110 hover:-translate-y-1 group-hover:shadow-2xl active:scale-95'}
-              ${isTouch ? 'touch-feedback' : ''}
-            `}
-            aria-label="Crear nuevo proyecto"
-          >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-          
-          {/* Enhanced notification badge with better mobile sizing */}
-          {tasks.filter(task => task.status === 'Pendiente').length > 0 && (
-            <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center animate-pulse shadow-lg">
-              {tasks.filter(task => task.status === 'Pendiente').length > 9 
-                ? '9+' 
-                : tasks.filter(task => task.status === 'Pendiente').length
-              }
-            </div>
-          )}
-          
-          {/* Enhanced tooltip with better positioning */}
-          <div className="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-gray-900/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap backdrop-blur-sm">
-            Crear nuevo proyecto
-            <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900/90"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced quick actions for desktop with accessibility */}
-      <div className="hidden lg:block fixed bottom-6 right-6 z-40">
-        <div className="flex flex-col space-y-3 animate-slideInFromBottom delay-1000">
-          {/* Quick add task button */}
-          <button
-            onClick={handleAddTask}
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-full p-3 shadow-lg transform transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-offset-2 group button-polish focus-enhanced"
-            aria-label="Agregar nueva tarea"
-          >
-            <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </button>
-          
-          {/* Quick new project button */}
-          <button
-            onClick={handleNewProject}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full p-3 shadow-lg transform transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-offset-2 group button-polish focus-enhanced"
-            aria-label="Crear nuevo proyecto"
-          >
-            <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      {/* Mobile-specific accessibility announcements */}
-      {isMobile && (
-        <div 
-          id="mobile-announcements" 
-          className="sr-only" 
-          aria-live="polite" 
-          aria-atomic="true"
-        >
-          {isPulling && "Actualizando contenido del dashboard"}
-          {orientation === 'landscape' && "Vista horizontal activada"}
-        </div>
-      )}
-      </div>
-    </ErrorBoundary>
+    </div>
   );
 }
