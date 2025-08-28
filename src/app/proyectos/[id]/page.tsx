@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/apiClient';
 import { Project, Activity, User } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { Loading } from '@/components/ui/Loading';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { ProjectTabs } from '@/components/projects/ProjectTabs';
 import { ProjectStats } from '@/components/projects/ProjectStats';
 import { ProjectQuickActions } from '@/components/projects/ProjectQuickActions';

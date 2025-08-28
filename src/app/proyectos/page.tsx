@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/apiClient';
 import { Project, User, Client } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { Table } from '@/components/ui/Table';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
 import { Loading } from '@/components/ui/Loading';
 import { ProjectForm } from '@/components/projects/ProjectForm';

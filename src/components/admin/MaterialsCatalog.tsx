@@ -6,7 +6,7 @@ import { Material } from '@/lib/types';
 import { Table } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { MaterialForm } from '@/components/materials/MaterialForm';
 import { 
   PlusIcon, 

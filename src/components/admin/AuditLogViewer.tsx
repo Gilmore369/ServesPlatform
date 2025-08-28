@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { auditLogger, AuditLogEntry, AuditAction, ResourceType } from '@/lib/auditLog';
 import { Table } from '@/components/ui/Table';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
 import { PermissionGate } from '@/components/ui/PermissionGate';
 import { Permission } from '@/lib/permissions';

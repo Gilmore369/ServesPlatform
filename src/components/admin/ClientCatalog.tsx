@@ -6,7 +6,7 @@ import { Client } from '@/lib/types';
 import { Table } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { ClientForm } from '@/components/clients/ClientForm';
 import { 
   PlusIcon, 
