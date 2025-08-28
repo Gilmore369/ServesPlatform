@@ -207,6 +207,26 @@ export interface APIResponse<T = unknown> {
   message?: string;
 }
 
+// Enhanced API Response with metadata and pagination
+export interface EnhancedAPIResponse<T = any> {
+  ok: boolean;
+  data?: T;
+  message?: string;
+  status: number;
+  timestamp: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    hasNext: boolean;
+  };
+  metadata?: {
+    executionTime: number;
+    cacheHit: boolean;
+    version: string;
+  };
+}
+
 export interface AuthResponse {
   ok: boolean;
   jwt?: string;
@@ -307,4 +327,62 @@ export interface AppConfig {
   apiToken: string;
   appName: string;
   appVersion: string;
+}
+
+// Enhanced API Service Configuration
+export interface APIServiceConfig {
+  baseUrl: string;
+  token: string;
+  timeout: number;
+  retryAttempts: number;
+  cacheEnabled: boolean;
+  retryDelay: number;
+  maxRetryDelay: number;
+  backoffMultiplier: number;
+}
+
+// CRUD Operation Interface
+export interface CRUDOperation {
+  table: string;
+  operation: 'list' | 'get' | 'create' | 'update' | 'delete';
+  data?: any;
+  filters?: Record<string, any>;
+  pagination?: { page: number; limit: number };
+  id?: string;
+}
+
+// Error Classification
+export enum ErrorType {
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  PERMISSION_ERROR = 'PERMISSION_ERROR',
+  DATA_CONFLICT = 'DATA_CONFLICT',
+  RATE_LIMIT = 'RATE_LIMIT',
+  SERVER_ERROR = 'SERVER_ERROR',
+  TIMEOUT_ERROR = 'TIMEOUT_ERROR'
+}
+
+export interface APIError {
+  type: ErrorType;
+  message: string;
+  details?: any;
+  retryable: boolean;
+  timestamp: string;
+  status?: number;
+}
+
+// Retry Configuration
+export interface RetryConfig {
+  maxAttempts: number;
+  backoffMultiplier: number;
+  initialDelay: number;
+  maxDelay: number;
+}
+
+// Request Options
+export interface RequestOptions {
+  timeout?: number;
+  retryConfig?: Partial<RetryConfig>;
+  requireAuth?: boolean;
+  skipCache?: boolean;
 }

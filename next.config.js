@@ -1,30 +1,36 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // DISABLE ALL CHECKS FOR VERCEL DEPLOYMENT
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  
-  // Disable strict mode for faster builds
-  reactStrictMode: false,
-  
-  // Enable experimental features for better performance
   experimental: {
-    optimizePackageImports: ['@heroicons/react'],
     optimizeCss: true,
     scrollRestoration: true,
+    optimizePackageImports: ['lucide-react', '@headlessui/react']
   },
-  
-  // Image optimization configuration
+  typescript: {
+    // Temporarily ignore TypeScript errors during build
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Temporarily ignore ESLint errors during build
+    ignoreDuringBuilds: true,
+  },
+  env: {
+    CUSTOM_KEY: 'my-value',
+  },
   images: {
-    domains: ['drive.google.com', 'lh3.googleusercontent.com'],
-    formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60,
+    domains: ['localhost'],
   },
-};
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+    ]
+  },
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
