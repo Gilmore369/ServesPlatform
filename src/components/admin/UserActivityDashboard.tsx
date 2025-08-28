@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { auditLogger, AuditLogEntry, AuditAction, ResourceType } from '@/lib/auditLog';
 import { apiClient } from '@/lib/apiClient';
 import { User } from '@/lib/types';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { CardKpi } from '@/components/ui/CardKpi';
 import { PermissionGate } from '@/components/ui/PermissionGate';
 import { Permission } from '@/lib/permissions';

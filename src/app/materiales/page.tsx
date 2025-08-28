@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { Loading } from '@/components/ui/Loading';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { CardKpi } from '@/components/ui/CardKpi';
 import { MaterialForm } from '@/components/materials/MaterialForm';
 import { MaterialsTable } from '@/components/materials/MaterialsTable';
