@@ -42,4 +42,20 @@ export const AlertDescription: React.FC<AlertDescriptionProps> = ({
   );
 };
 
+export interface AlertTitleProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const AlertTitle: React.FC<AlertTitleProps> = ({ 
+  children, 
+  className = '' 
+}) => {
+  return (
+    <h5 className={`mb-1 font-medium leading-none tracking-tight ${className}`}>
+      {children}
+    </h5>
+  );
+};
+
 export default Alert;
