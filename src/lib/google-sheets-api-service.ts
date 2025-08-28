@@ -65,8 +65,14 @@ export interface EnhancedAPIResponse<T = any> {
   };
 }
 
-// Re-export enhanced error types for backward compatibility
-export { ErrorType, EnhancedError as GoogleSheetsAPIError } from './error-handler';
+// Re-export enhanced error types and configurations for backward compatibility
+export { 
+  ErrorType, 
+  EnhancedError as GoogleSheetsAPIError
+} from './error-handler';
+
+// Re-export interfaces separately to avoid TypeScript issues
+export type { RetryConfig, FallbackConfig } from './error-handler';
 
 export interface APIError {
   type: ErrorType;
@@ -76,9 +82,6 @@ export interface APIError {
   timestamp: string;
   status?: number;
 }
-
-// Re-export retry configuration for backward compatibility
-export { RetryConfig } from './error-handler';
 
 // Request Options
 export interface RequestOptions {
@@ -129,6 +132,7 @@ export class GoogleSheetsAPIService {
 
   /**
    * Execute a single CRUD operation with enhanced error handling, retry logic, and cache fallback
+   * Implements intelligent caching, query optimization, and comprehensive monitoring
    */
   async executeOperation<T>(
     operation: CRUDOperation,

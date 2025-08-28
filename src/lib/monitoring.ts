@@ -562,7 +562,11 @@ export function useMonitoring(componentName: string) {
   };
 }
 
-export default {
+// Export all functions individually for better tree-shaking and compatibility
+// Note: Individual functions are already exported above with their declarations
+
+// Default export for backward compatibility
+const monitoring = {
   trackError,
   trackPerformance,
   trackEvent,
@@ -574,3 +578,5 @@ export default {
   useMonitoring,
   config: monitoringConfig,
 };
+
+export default monitoring;
