@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { Project } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { Loading } from '@/components/ui/Loading';
@@ -31,7 +31,7 @@ export default function EditProjectPage() {
       setLoading(true);
       setError(null);
 
-      const response = await apiClient.getProject(projectId);
+      const response = await api.getProject(projectId);
       
       if (response.ok && response.data) {
         setProject(response.data);

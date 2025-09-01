@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { auditLogger, AuditLogEntry, AuditAction, ResourceType } from '@/lib/auditLog';
 import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/badge';

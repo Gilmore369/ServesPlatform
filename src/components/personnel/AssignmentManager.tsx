@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Assignment, Personnel, Project, Activity } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';

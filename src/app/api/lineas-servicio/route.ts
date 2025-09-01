@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || 'demo-token-2024';
 
 export async function GET() {
   try {
-    const response = await fetch(`${API_BASE_URL}?action=getLineasServicio`, {
+    const response = await fetch(`${API_BASE_URL}?action=getLineasServicio&token=${API_TOKEN}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}?action=createLineaServicio`, {
+    const response = await fetch(`${API_BASE_URL}?action=createLineaServicio&token=${API_TOKEN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}?action=updateLineaServicio`, {
+    const response = await fetch(`${API_BASE_URL}?action=updateLineaServicio&token=${API_TOKEN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -92,7 +93,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}?action=deleteLineaServicio`, {
+    const response = await fetch(`${API_BASE_URL}?action=deleteLineaServicio&token=${API_TOKEN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

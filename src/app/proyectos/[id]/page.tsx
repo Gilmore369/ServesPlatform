@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { Project, Activity, User } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { Loading } from '@/components/ui/Loading';
@@ -38,9 +38,9 @@ export default function ProjectDetailPage() {
 
       // Load project, activities, and users in parallel
       const [projectResponse, activitiesResponse, usersResponse] = await Promise.all([
-        apiClient.getProject(projectId),
-        apiClient.getActivities({ limit: 100 }),
-        apiClient.getUsers({ limit: 100 }),
+        api.getProject(projectId),
+        api.getActivities({ limit: 100 }),
+        api.getUsers({ limit: 100 }),
       ]);
 
       if (projectResponse.ok && projectResponse.data) {

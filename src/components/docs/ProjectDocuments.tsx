@@ -7,7 +7,7 @@ import { useApi } from '@/lib/hooks/useApi';
 import { Modal } from '@/components/ui/Modal';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import {
   DocumentIcon,
   PlusIcon,

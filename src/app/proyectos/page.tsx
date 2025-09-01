@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { Project, User, Client } from '@/lib/types';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProjectsSync, useUsersSync, useClientsSync } from '@/hooks/useDataSync';
+import { DataOperationFeedback } from '@/components/ui/DataOperationFeedback';
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
 import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
@@ -31,14 +36,22 @@ interface ProjectFilters {
 export default function ProjectsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // Use enhanced data sync hooks
+  const projectsSync = useProjectsSync({ limit: 100 });
+  const usersSync = useUsersSync({ limit: 100 });
+  const clientsSync = useClientsSync({ limit: 100 });
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  
+  // Get data from sync hooks
+  const projects = projectsSync.data || [];
+  const users = usersSync.data || [];
+  const clients = clientsSync.data || [];
+  const loading = projectsSync.state.loading || usersSync.state.loading || clientsSync.state.loading;
+  const error = projectsSync.state.error || usersSync.state.error || clientsSync.state.error;
   
   const [filters, setFilters] = useState<ProjectFilters>({
     search: '',
@@ -52,42 +65,13 @@ export default function ProjectsPage() {
     presupuesto_max: '',
   });
 
-  // Load initial data
-  useEffect(() => {
-    loadData();
-  }, []);
-
+  // Refresh data function for manual refresh
   const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load projects, users, and clients in parallel
-      const [projectsResponse, usersResponse, clientsResponse] = await Promise.all([
-        apiClient.getProjects({ limit: 100 }),
-        apiClient.getUsers({ limit: 100 }),
-        apiClient.getClients({ limit: 100 }),
-      ]);
-
-      if (projectsResponse.ok && projectsResponse.data) {
-        setProjects(projectsResponse.data);
-      } else {
-        throw new Error(projectsResponse.message || 'Error loading projects');
-      }
-
-      if (usersResponse.ok && usersResponse.data) {
-        setUsers(usersResponse.data);
-      }
-
-      if (clientsResponse.ok && clientsResponse.data) {
-        setClients(clientsResponse.data);
-      }
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError(err instanceof Error ? err.message : 'Error loading data');
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([
+      projectsSync.actions.refresh(),
+      usersSync.actions.refresh(),
+      clientsSync.actions.refresh()
+    ]);
   };
 
   // Filter projects based on current filters
@@ -138,7 +122,7 @@ export default function ProjectsPage() {
 
   // Handle project creation
   const handleProjectCreated = (newProject: Project) => {
-    setProjects(prev => [newProject, ...prev]);
+    // The sync hook will automatically update the data
     setShowCreateModal(false);
   };
 
@@ -301,6 +285,13 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* Data Operation Feedback */}
+      <DataOperationFeedback
+        state={projectsSync.state}
+        onClearError={projectsSync.actions.clearError}
+        onClearLastOperation={projectsSync.actions.clearLastOperation}
+      />
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border">
@@ -480,10 +471,10 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Error message */}
-      {error && (
+      {/* Legacy error message - now handled by DataOperationFeedback */}
+      {error && !projectsSync.state.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
+          <p className="text-red-800">{error.userMessage || error.message || 'Error loading data'}</p>
           <button
             onClick={loadData}
             className="mt-2 text-red-600 hover:text-red-800 underline"

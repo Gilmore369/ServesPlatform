@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { queryPerformanceMonitor } from '../../lib/query-optimizer';
 import { compressionService } from '../../lib/compression';
 import { Card } from '../ui/card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 
 interface PerformanceMetrics {
   totalQueries: number;

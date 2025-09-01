@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { Loading } from '@/components/ui/Loading';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { BOMForm } from './BOMForm';
 import { PurchaseRequestGenerator } from './PurchaseRequestGenerator';
 import { BOMStatusTracker } from './BOMStatusTracker';

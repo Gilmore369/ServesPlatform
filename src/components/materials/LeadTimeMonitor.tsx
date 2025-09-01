@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BOM, Material } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/Loading';
 import {
   ClockIcon,

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BOM, Material } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
 import {
   PencilIcon,

@@ -7,7 +7,7 @@ import React, { useState, useMemo } from 'react';
 import { LazyLoad, LazyTable } from '../ui/LazyLoad';
 import { useOptimizedData, useOptimizedSearch } from '../../hooks/useOptimizedData';
 import { Card } from '../ui/card';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
 
 interface Material {

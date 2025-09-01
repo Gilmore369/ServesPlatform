@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
 import { useApi } from '@/lib/hooks/useApi';
 import { Document, DocumentCategory } from '@/lib/types';
 import { DocumentationList } from '@/components/docs/DocumentationList';

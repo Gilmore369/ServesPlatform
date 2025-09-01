@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Modal, ModalBody, ModalFooter } from './Modal';
-import { Button } from './Button';
+import { Button } from './button';
 import { useAccessibility } from '@/lib/contexts/AccessibilityContext';
 import {
   AdjustmentsHorizontalIcon,

@@ -162,19 +162,19 @@ export function DashboardTopBar({ title, onToggleSidebar, user, notifications }:
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center space-x-3 p-2 text-sm rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
-              aria-label={`Menú de usuario: ${user.nombre}`}
+              aria-label={`Menú de usuario: ${user?.name || user?.nombre || 'Usuario'}`}
             >
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium text-sm">
-                    {user.nombre.charAt(0).toUpperCase()}
+                    {(user?.name || user?.nombre || user?.email || 'U').charAt(0).toUpperCase()}
                   </span>
                 </div>
               </div>
               <div className="hidden md:block text-left min-w-0">
-                <p className="font-medium text-gray-900 truncate">{user.nombre}</p>
+                <p className="font-medium text-gray-900 truncate">{user?.name || user?.nombre || 'Usuario'}</p>
                 <p className="text-xs text-gray-500 capitalize truncate">
-                  {user.rol.replace('_', ' ')}
+                  {(user?.rol || user?.role || 'usuario').replace('_', ' ')}
                 </p>
               </div>
             </button>
@@ -183,8 +183,8 @@ export function DashboardTopBar({ title, onToggleSidebar, user, notifications }:
             {isUserMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 animate-in slide-in-from-top-2 duration-200">
                 <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900 truncate">{user.nombre}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{user?.name || user?.nombre || 'Usuario'}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email || 'Sin email'}</p>
                 </div>
                 
                 <button

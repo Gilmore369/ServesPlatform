@@ -1,7 +1,7 @@
 'use client';
 
 import { Material } from '@/lib/types';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import {
   PencilIcon,
   TrashIcon,

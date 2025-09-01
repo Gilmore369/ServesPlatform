@@ -1,173 +1,219 @@
-"use client";
+'use client';
 
-import React from 'react';
-import { ScheduleProps, CalendarEvent, EVENT_ICONS } from '@/lib/dashboard-types';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
+import { CalendarEvent, ScheduleProps, EVENT_ICONS, EVENT_COLORS } from '@/lib/dashboard-types';
 
-export function Schedule({ events, currentMonth, onNavigateMonth, isLoading = false }: ScheduleProps) {
-  // Get month name in Spanish
-  const getMonthName = (date: Date) => {
-    const months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    return months[date.getMonth()];
+// Icons
+const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+  </svg>
+);
+
+const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+  </svg>
+);
+
+// Loading skeleton component
+const EventSkeleton = () => (
+  <div className="flex items-center space-x-3 p-3 animate-pulse">
+    <div className="w-8 h-8 bg-gray-200 rounded"></div>
+    <div className="flex-1">
+      <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
+      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+    </div>
+    <div className="h-3 bg-gray-200 rounded w-16"></div>
+  </div>
+);
+
+// Individual event component
+interface EventItemProps {
+  event: CalendarEvent;
+}
+
+const EventItem: React.FC<EventItemProps> = ({ event }) => {
+  const formatTime = (time: string) => {
+    // Assuming time is in HH:MM format
+    return time;
   };
 
-  // Get events for current month
-  const currentMonthEvents = events.filter(event => {
-    const eventDate = new Date(event.date);
-    return eventDate.getMonth() === currentMonth.getMonth() && 
-           eventDate.getFullYear() === currentMonth.getFullYear();
-  });
-
-  // Sort events by date and time
-  const sortedEvents = currentMonthEvents.sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    if (dateA.getTime() !== dateB.getTime()) {
-      return dateA.getTime() - dateB.getTime();
-    }
-    return a.startTime.localeCompare(b.startTime);
-  });
-
-  // Format date for display
-  const formatDate = (date: Date) => {
-    const day = date.getDate();
-    const weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const weekday = weekdays[date.getDay()];
-    return `${weekday} ${day}`;
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
   };
 
-  // Format time range
-  const formatTimeRange = (startTime: string, endTime: string) => {
-    return `${startTime} - ${endTime}`;
+  const isTomorrow = (date: Date) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return date.toDateString() === tomorrow.toDateString();
   };
 
-  // Get event type label in Spanish
-  const getEventTypeLabel = (type: CalendarEvent['type']) => {
-    const labels = {
-      'meeting': 'Reunión',
-      'delivery': 'Entrega',
-      'inspection': 'Inspección',
-      'review': 'Revisión'
-    };
-    return labels[type];
+  const formatEventDate = (date: Date) => {
+    if (isToday(date)) return 'Hoy';
+    if (isTomorrow(date)) return 'Mañana';
+    
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit'
+    });
   };
-
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg">
-              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      {/* Header with navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Cronograma</h3>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onNavigateMonth('prev')}
-            className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-            aria-label="Mes anterior"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-          <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
-            {getMonthName(currentMonth)} {currentMonth.getFullYear()}
-          </span>
-          <button
-            onClick={() => onNavigateMonth('next')}
-            className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-            aria-label="Mes siguiente"
-          >
-            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
-          </button>
+    <div className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+      {/* Event icon */}
+      <div className={`w-8 h-8 rounded flex items-center justify-center text-lg ${EVENT_COLORS[event.type]} bg-gray-100`}>
+        {EVENT_ICONS[event.type]}
+      </div>
+
+      {/* Event info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">
+          {event.title}
+        </p>
+        <p className="text-xs text-gray-500 truncate">
+          {event.project}
+        </p>
+      </div>
+
+      {/* Time and date */}
+      <div className="text-right">
+        <p className="text-xs font-medium text-gray-900">
+          {formatTime(event.startTime)}
+        </p>
+        <p className="text-xs text-gray-500">
+          {formatEventDate(event.date)}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Main Schedule component
+export const Schedule: React.FC<ScheduleProps> = ({
+  events,
+  currentMonth,
+  onNavigateMonth,
+  isLoading = false
+}) => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Filter events for the current week
+  const getUpcomingEvents = () => {
+    const now = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(now.getDate() + 7);
+
+    return events
+      .filter(event => event.date >= now && event.date <= nextWeek)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, 8); // Limit to 8 events
+  };
+
+  const upcomingEvents = getUpcomingEvents();
+
+  const formatMonthYear = (date: Date) => {
+    return date.toLocaleDateString('es-ES', {
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <CalendarIcon className="w-5 h-5 mr-2 text-gray-600" />
+              Próximos Eventos
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {upcomingEvents.length} evento{upcomingEvents.length !== 1 ? 's' : ''} esta semana
+            </p>
+          </div>
+          
+          {/* Month navigation */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => onNavigateMonth('prev')}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              title="Mes anterior"
+            >
+              <ChevronLeftIcon className="w-4 h-4 text-gray-600" />
+            </button>
+            <span className="text-sm font-medium text-gray-900 min-w-0 px-2">
+              {formatMonthYear(currentMonth)}
+            </span>
+            <button
+              onClick={() => onNavigateMonth('next')}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              title="Mes siguiente"
+            >
+              <ChevronRightIcon className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Events list */}
-      <div className="space-y-3">
-        {sortedEvents.length === 0 ? (
+      {/* Content */}
+      <div className="p-6">
+        {isLoading ? (
+          <div className="space-y-1">
+            {[...Array(5)].map((_, index) => (
+              <EventSkeleton key={index} />
+            ))}
+          </div>
+        ) : upcomingEvents.length === 0 ? (
           <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-2">📅</div>
-            <p className="text-gray-500 text-sm">
-              No hay eventos programados para {getMonthName(currentMonth).toLowerCase()}
-            </p>
+            <CalendarIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No hay eventos próximos</h4>
+            <p className="text-gray-600">No tienes eventos programados para esta semana.</p>
           </div>
         ) : (
-          sortedEvents.map((event) => (
-            <div
-              key={event.id}
-              className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {/* Event icon */}
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-lg ${event.iconColor}`}>
-                {EVENT_ICONS[event.type]}
-              </div>
+          <>
+            {/* Events list */}
+            <div className="space-y-1">
+              {upcomingEvents.map((event) => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </div>
 
-              {/* Event details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 truncate">
-                      {event.title}
-                    </h4>
-                    <p className="text-xs text-gray-600 truncate mt-1">
-                      {event.project}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 ml-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 ${event.iconColor}`}>
-                      {getEventTypeLabel(event.type)}
-                    </span>
-                  </div>
+            {/* Event type legend */}
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <p className="text-xs font-medium text-gray-700 mb-2">Tipos de eventos:</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center">
+                  <span className="mr-2">👥</span>
+                  <span className="text-gray-600">Reuniones</span>
                 </div>
-                
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-xs text-gray-500">
-                    {formatDate(new Date(event.date))}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatTimeRange(event.startTime, event.endTime)}
-                  </span>
+                <div className="flex items-center">
+                  <span className="mr-2">📦</span>
+                  <span className="text-gray-600">Entregas</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="mr-2">🔍</span>
+                  <span className="text-gray-600">Inspecciones</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="mr-2">📋</span>
+                  <span className="text-gray-600">Revisiones</span>
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Mobile responsive event list - shows more compact view on small screens */}
-      <div className="block sm:hidden mt-4">
-        {sortedEvents.length > 0 && (
-          <div className="text-xs text-gray-500 text-center">
-            {sortedEvents.length} evento{sortedEvents.length !== 1 ? 's' : ''} este mes
-          </div>
+          </>
         )}
       </div>
     </div>
   );
-}
+};
+
+export default Schedule;

@@ -7,7 +7,7 @@ import {
   TeamMember, 
   CalendarEvent 
 } from '@/lib/dashboard-types';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardData {
   metrics: DashboardMetrics;
@@ -80,7 +80,7 @@ const initialErrorStates: ErrorStates = {
 };
 
 export function useDashboardData(): UseDashboardDataReturn {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [data, setData] = useState<DashboardData>(initialData);
   const [loading, setLoading] = useState<LoadingStates>(initialLoadingStates);
   const [errors, setErrors] = useState<ErrorStates>(initialErrorStates);
@@ -105,7 +105,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Fetch metrics
   const fetchMetrics = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     setLoadingState('metrics', true);
     setErrorState('metrics', null);
@@ -124,7 +124,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Fetch projects
   const fetchProjects = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     setLoadingState('projects', true);
     setErrorState('projects', null);
@@ -143,7 +143,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     setLoadingState('tasks', true);
     setErrorState('tasks', null);
@@ -162,7 +162,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Fetch team members
   const fetchTeamMembers = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     setLoadingState('teamMembers', true);
     setErrorState('teamMembers', null);
@@ -181,7 +181,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Fetch events
   const fetchEvents = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     setLoadingState('events', true);
     setErrorState('events', null);
@@ -200,7 +200,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Fetch all data
   const fetchAll = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     // Fetch all data in parallel for better performance
     await Promise.all([
@@ -239,7 +239,7 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Initial data fetch when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       fetchAll();
     } else {
       // Reset data when not authenticated
@@ -247,18 +247,18 @@ export function useDashboardData(): UseDashboardDataReturn {
       setLoading(initialLoadingStates);
       setErrors(initialErrorStates);
     }
-  }, [isAuthenticated, fetchAll]);
+  }, [isAuthenticated, user, fetchAll]);
 
   // Auto-refresh data every 5 minutes when authenticated
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     const interval = setInterval(() => {
       fetchAll();
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, fetchAll]);
+  }, [isAuthenticated, user, fetchAll]);
 
   // Computed values
   const isAnyLoading = Object.values(loading).some(Boolean);

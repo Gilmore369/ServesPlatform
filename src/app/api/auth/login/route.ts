@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || 'demo-token-2024';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}?action=login`, {
+    const response = await fetch(`${API_BASE_URL}?action=auth&token=${API_TOKEN}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

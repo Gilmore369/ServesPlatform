@@ -127,4 +127,4 @@ export function withRole<P extends object>(
 }
 
 // Import useAuth for RoleGate
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';

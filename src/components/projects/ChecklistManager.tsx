@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Checklist, ChecklistItem } from '@/lib/types';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
@@ -32,7 +32,7 @@ export function ChecklistManager({ onSelect }: ChecklistManagerProps) {
   const loadChecklists = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.getChecklists();
+      const response = await api.getChecklists();
       if (response.ok && response.data) {
         setChecklists(response.data);
       }
@@ -45,7 +45,7 @@ export function ChecklistManager({ onSelect }: ChecklistManagerProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      await apiClient.delete('Checklists', id);
+      await api.delete('Checklists', id);
       loadChecklists();
     } catch (error) {
       console.error('Error deleting checklist:', error);
@@ -321,9 +321,9 @@ function ChecklistForm({ checklist, onSuccess, onCancel }: ChecklistFormProps) {
       };
 
       if (checklist) {
-        await apiClient.updateChecklist(checklist.id, checklistData);
+        await api.updateChecklist(checklist.id, checklistData);
       } else {
-        await apiClient.createChecklist(checklistData);
+        await api.createChecklist(checklistData);
       }
 
       onSuccess();

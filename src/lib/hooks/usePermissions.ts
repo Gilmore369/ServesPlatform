@@ -3,7 +3,7 @@
  */
 
 import { useMemo } from 'react';
-import { useAuth } from '../auth';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   Permission, 
   hasPermission, 

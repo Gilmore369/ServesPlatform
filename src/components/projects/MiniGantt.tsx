@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Activity, User } from '@/lib/types';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,

@@ -7,6 +7,9 @@ import OperationalReports from '@/components/reports/OperationalReports';
 import CapacityReports from '@/components/reports/CapacityReports';
 import FinancialReports from '@/components/reports/FinancialReports';
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
+
 export default function ReportsPage() {
   return (
     <div className="container mx-auto p-6">

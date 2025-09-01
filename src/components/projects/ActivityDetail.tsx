@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, User, Checklist, ActivityChecklist, Evidence, ChecklistItem } from '@/lib/types';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
@@ -46,21 +46,21 @@ export function ActivityDetail({ activity, users, onUpdate, onClose }: ActivityD
     setLoading(true);
     try {
       // Load checklists
-      const checklistsResponse = await apiClient.getChecklists();
+      const checklistsResponse = await api.getChecklists();
       if (checklistsResponse.ok && checklistsResponse.data) {
         setChecklists(checklistsResponse.data);
       }
 
       // Load activity checklist if exists
       if (activity.checklist_id) {
-        const activityChecklistResponse = await apiClient.getActivityChecklists(activity.id);
+        const activityChecklistResponse = await api.getActivityChecklists(activity.id);
         if (activityChecklistResponse.ok && activityChecklistResponse.data && activityChecklistResponse.data.length > 0) {
           setActivityChecklist(activityChecklistResponse.data[0]);
         }
       }
 
       // Load evidence
-      const evidenceResponse = await apiClient.getActivityEvidence(activity.id);
+      const evidenceResponse = await api.getActivityEvidence(activity.id);
       if (evidenceResponse.ok && evidenceResponse.data) {
         setEvidence(evidenceResponse.data);
       }
@@ -97,7 +97,7 @@ export function ActivityDetail({ activity, users, onUpdate, onClose }: ActivityD
         porcentaje_avance: 100,
       };
 
-      const response = await apiClient.updateActivity(activity.id, updatedActivity);
+      const response = await api.updateActivity(activity.id, updatedActivity);
       if (response.ok) {
         onUpdate();
         onClose();
@@ -253,7 +253,7 @@ export function ActivityDetail({ activity, users, onUpdate, onClose }: ActivityD
         onConfirm={async () => {
           if (deleteConfirm) {
             try {
-              await apiClient.deleteEvidence(deleteConfirm);
+              await api.deleteEvidence(deleteConfirm);
               loadActivityData();
             } catch (error) {
               console.error('Error deleting evidence:', error);
@@ -319,7 +319,7 @@ function ChecklistSection({
         completado: false,
       };
 
-      await apiClient.createActivityChecklist(checklistData);
+      await api.createActivityChecklist(checklistData);
       onUpdate();
       onShowForm(false);
       setSelectedChecklistId('');
@@ -338,7 +338,7 @@ function ChecklistSection({
     const allCompleted = updatedItems.every(item => item.completado);
 
     try {
-      await apiClient.updateActivityChecklist(activityChecklist.id, {
+      await api.updateActivityChecklist(activityChecklist.id, {
         items_estado_json: JSON.stringify(updatedItems),
         completado: allCompleted,
       });
@@ -595,7 +595,7 @@ function EvidenceForm({ activityId, currentUserId, onSuccess, onCancel }: Eviden
 
     setLoading(true);
     try {
-      await apiClient.createEvidence({
+      await api.createEvidence({
         ...formData,
         actividad_id: activityId,
         usuario_id: currentUserId,

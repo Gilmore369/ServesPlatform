@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Document, DocumentCategory } from '@/lib/types';
 import { useApi } from '@/lib/hooks/useApi';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import {
   DocumentTextIcon,
   PencilIcon,

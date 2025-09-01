@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/dashboard';
 import { Loading } from '@/components/ui/Loading';
 

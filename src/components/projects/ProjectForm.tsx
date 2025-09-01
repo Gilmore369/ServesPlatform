@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { Project, User, Client } from '@/lib/types';
 import { Modal } from '@/components/ui/Modal';
 import { ClientForm } from '@/components/clients/ClientForm';
+import { SyncedForm } from '@/components/ui/SyncedForm';
+import { DataOperationFeedback } from '@/components/ui/DataOperationFeedback';
+import { useProjectsSync, useUsersSync, useClientsSync } from '@/hooks/useDataSync';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 interface ProjectFormProps {
@@ -64,41 +67,20 @@ export function ProjectForm({ project, onSuccess, onCancel }: ProjectFormProps) 
     } : initialFormData
   );
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showClientModal, setShowClientModal] = useState(false);
 
-  // Load users and clients for dropdowns
-  useEffect(() => {
-    loadInitialData();
-  }, []);
+  // Use enhanced data sync hooks
+  const projectsSync = useProjectsSync();
+  const usersSync = useUsersSync({ limit: 100 });
+  const clientsSync = useClientsSync({ limit: 100 });
 
-  const loadInitialData = async () => {
-    try {
-      const [usersResponse, clientsResponse] = await Promise.all([
-        apiClient.getUsers({ limit: 100 }),
-        apiClient.getClients({ limit: 100 }),
-      ]);
-
-      if (usersResponse.ok && usersResponse.data) {
-        // Filter users that can be project managers (admin_lider, admin, editor)
-        const projectManagers = usersResponse.data.filter(user => 
-          ['admin_lider', 'admin', 'editor'].includes(user.rol) && user.activo
-        );
-        setUsers(projectManagers);
-      }
-
-      if (clientsResponse.ok && clientsResponse.data) {
-        // Filter active clients
-        const activeClients = clientsResponse.data.filter(client => client.activo);
-        setClients(activeClients);
-      }
-    } catch (error) {
-      console.error('Error loading initial data:', error);
-    }
-  };
+  // Filter data for dropdowns
+  const projectManagers = usersSync.data.filter(user => 
+    ['admin_lider', 'admin', 'editor'].includes(user.rol) && user.activo
+  );
+  
+  const activeClients = clientsSync.data.filter(client => client.activo);
 
   // Handle form field changes
   const handleChange = (field: keyof ProjectFormData, value: string | number) => {
@@ -164,62 +146,54 @@ export function ProjectForm({ project, onSuccess, onCancel }: ProjectFormProps) 
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Handle form submission with enhanced sync
+  const handleSubmit = async (data: Partial<Project>) => {
     if (!validateForm()) {
-      return;
+      throw new Error('Validation failed');
     }
 
-    setLoading(true);
+    // Prepare data for API
+    const projectData = {
+      ...formData,
+      inicio_plan: new Date(formData.inicio_plan),
+      fin_plan: new Date(formData.fin_plan),
+      avance_pct: project?.avance_pct || 0,
+    };
 
-    try {
-      // Prepare data for API
-      const projectData = {
-        ...formData,
-        inicio_plan: new Date(formData.inicio_plan),
-        fin_plan: new Date(formData.fin_plan),
-        avance_pct: project?.avance_pct || 0,
-      };
-
-      let response;
-      if (project) {
-        // Update existing project
-        response = await apiClient.updateProject(project.id, projectData);
-      } else {
-        // Create new project
-        response = await apiClient.createProject(projectData);
-      }
-
-      if (response.ok && response.data) {
-        onSuccess(response.data);
-      } else {
-        throw new Error(response.message || 'Error saving project');
-      }
-    } catch (error) {
-      console.error('Error saving project:', error);
-      setErrors({ 
-        submit: error instanceof Error ? error.message : 'Error saving project' 
-      });
-    } finally {
-      setLoading(false);
+    let result;
+    if (project) {
+      // Update existing project
+      result = await projectsSync.actions.update(project.id, projectData);
+    } else {
+      // Create new project
+      result = await projectsSync.actions.create(projectData);
     }
+
+    // Call success callback
+    onSuccess(result);
   };
 
-  // Handle client creation
+  // Handle client creation with sync refresh
   const handleClientCreated = (newClient: Client) => {
-    setClients(prev => [newClient, ...prev]);
+    // Refresh clients data to include the new client
+    clientsSync.actions.refresh();
     setFormData(prev => ({ ...prev, cliente_id: newClient.id }));
     setShowClientModal(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Error message */}
-      {errors.submit && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{errors.submit}</p>
+    <SyncedForm
+      syncState={projectsSync.state}
+      syncActions={projectsSync.actions}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      submitLabel={project ? 'Actualizar Proyecto' : 'Crear Proyecto'}
+      className="space-y-6"
+    >
+      {/* Loading states for dependent data */}
+      {(usersSync.state.loading || clientsSync.state.loading) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-800">Cargando datos necesarios...</p>
         </div>
       )}
 
@@ -276,7 +250,7 @@ export function ProjectForm({ project, onSuccess, onCancel }: ProjectFormProps) 
               }`}
             >
               <option value="">Seleccionar cliente</option>
-              {clients.map(client => (
+              {activeClients.map(client => (
                 <option key={client.id} value={client.id}>
                   {client.razon_social} ({client.ruc})
                 </option>
@@ -309,7 +283,7 @@ export function ProjectForm({ project, onSuccess, onCancel }: ProjectFormProps) 
             }`}
           >
             <option value="">Seleccionar responsable</option>
-            {users.map(user => (
+            {projectManagers.map(user => (
               <option key={user.id} value={user.id}>
                 {user.nombre} ({user.rol})
               </option>
@@ -481,24 +455,7 @@ export function ProjectForm({ project, onSuccess, onCancel }: ProjectFormProps) 
         />
       </div>
 
-      {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-          disabled={loading}
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Guardando...' : (project ? 'Actualizar' : 'Crear Proyecto')}
-        </button>
-      </div>
+
 
       {/* Create Client Modal */}
       <Modal
@@ -512,6 +469,6 @@ export function ProjectForm({ project, onSuccess, onCancel }: ProjectFormProps) 
           onCancel={() => setShowClientModal(false)}
         />
       </Modal>
-    </form>
+    </SyncedForm>
   );
 }

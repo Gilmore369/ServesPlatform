@@ -1,6 +1,12 @@
 import { config } from './config';
+import { getApiBaseUrl, getApiToken } from './emergency-config';
 import { JWTManager } from './jwt';
-import { APIResponse, AuthResponse, Project, User, Activity, Material, Personnel, Client, Checklist, ActivityChecklist, Evidence, BOM, Assignment, TimeEntry } from './types';
+import { APIResponse, AuthResponse, Project, User, Activity, Material, Personnel, Client, Checklist, ActivityChecklist, Evidence, BOM, Assignment, TimeEntry, EnhancedAPIResponse, CRUDOperation } from './types';
+import { googleSheetsAPIService, GoogleSheetsAPIService } from './google-sheets-api-service';
+import { optimizedSheetsService } from './optimized-sheets-service';
+import { performanceMonitor, monitorPerformance } from './performance-monitor';
+import { queueRequest } from './request-queue';
+import { logger } from './logger';
 
 export class APIError extends Error {
   constructor(
@@ -23,14 +29,23 @@ export interface RequestOptions {
 class APIClient {
   private baseURL: string;
   private apiToken: string;
+  private enhancedService: GoogleSheetsAPIService;
 
   constructor() {
-    this.baseURL = config.apiBaseUrl;
-    this.apiToken = config.apiToken;
+    // Use emergency config to ensure correct URL
+    this.baseURL = getApiBaseUrl();
+    this.apiToken = getApiToken();
+    this.enhancedService = googleSheetsAPIService;
+    
+    logger.info('APIClient initialized with enhanced Google Sheets service', {
+      baseURL: this.baseURL,
+      hasEnhancedService: !!this.enhancedService
+    });
   }
 
   /**
    * Make HTTP request to the API using GET with query parameters to avoid CORS
+   * Enhanced with performance monitoring and request queuing
    */
   private async request<T>(
     endpoint: string,
@@ -40,6 +55,9 @@ class APIClient {
       body,
       requireAuth = true,
     } = options;
+
+    const operation = `api-request-${body?.action || 'unknown'}`;
+    const endTiming = performanceMonitor.startTiming(operation);
 
     // For Google Apps Script, we need to send everything as GET with query parameters
     const requestData: any = {
@@ -68,31 +86,45 @@ class APIClient {
     console.log('🔗 APIClient: URL de petición:', url);
 
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
+      // Use request queue for better performance
+      const requestKey = `api-${body?.action}-${body?.table}-${JSON.stringify(body)}`;
+      
+      const result = await queueRequest(requestKey, async () => {
+        const response = await fetch(url, {
+          method: 'GET',
+          mode: 'cors',
+        });
+        
+        console.log('📡 APIClient: Status de respuesta:', response.status);
+        
+        // Parse response
+        let data: T;
+        try {
+          data = await response.json();
+        } catch {
+          throw new APIError('Invalid JSON response', response.status);
+        }
+
+        // Check if response indicates success
+        const apiResponse = data as any;
+        if (!apiResponse.ok) {
+          const errorMessage = apiResponse.message || 'API request failed';
+          throw new APIError(errorMessage, response.status);
+        }
+
+        // Return the data portion of the response
+        return apiResponse.data || apiResponse;
       });
-      
-      console.log('📡 APIClient: Status de respuesta:', response.status);
-      
-      // Parse response
-      let data: T;
-      try {
-        data = await response.json();
-      } catch {
-        throw new APIError('Invalid JSON response', response.status);
-      }
 
-      // Check if response indicates success
-      const apiResponse = data as any;
-      if (!apiResponse.ok) {
-        const errorMessage = apiResponse.message || 'API request failed';
-        throw new APIError(errorMessage, response.status);
-      }
-
-      // Return the data portion of the response
-      return apiResponse.data || apiResponse;
+      endTiming(true, undefined, { url, body });
+      return result;
     } catch (error) {
+      const errorMessage = error instanceof APIError ? error.message : 
+        error instanceof TypeError && error.message.includes('fetch') ? 
+        'Network error - check your connection' : 'Unexpected error occurred';
+      
+      endTiming(false, errorMessage, { url, body });
+
       if (error instanceof APIError) {
         throw error;
       }
@@ -126,62 +158,207 @@ class APIClient {
   }
 
   /**
-   * Generic CRUD operations
+   * Generic CRUD operations using enhanced Google Sheets service
    */
   async list<T>(table: string, params?: { limit?: number; q?: string }): Promise<APIResponse<T[]>> {
-    return this.request<APIResponse<T[]>>('', {
-      body: { 
-        action: 'crud',
+    try {
+      const operation: CRUDOperation = {
         table,
         operation: 'list',
-        ...params
-      },
-    });
+        filters: params?.q ? { search: params.q } : undefined,
+        pagination: params?.limit ? { page: 1, limit: params.limit } : undefined
+      };
+
+      const response = await this.enhancedService.executeOperation<T[]>(operation);
+      
+      // Convert enhanced response to legacy format for backward compatibility
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      logger.error(`Failed to list ${table}`, error);
+      
+      // Fallback to legacy request method if enhanced service fails
+      return this.request<APIResponse<T[]>>('', {
+        body: { 
+          action: 'crud',
+          table,
+          operation: 'list',
+          ...params
+        },
+      });
+    }
   }
 
   async get<T>(table: string, id: string): Promise<APIResponse<T>> {
-    return this.request<APIResponse<T>>('', {
-      body: { 
-        action: 'crud',
+    try {
+      const operation: CRUDOperation = {
         table,
         operation: 'get',
         id
-      },
-    });
+      };
+
+      const response = await this.enhancedService.executeOperation<T>(operation);
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      logger.error(`Failed to get ${table} with id ${id}`, error);
+      
+      // Fallback to legacy request method
+      return this.request<APIResponse<T>>('', {
+        body: { 
+          action: 'crud',
+          table,
+          operation: 'get',
+          id
+        },
+      });
+    }
   }
 
   async create<T>(table: string, data: Partial<T>): Promise<APIResponse<T>> {
-    return this.request<APIResponse<T>>('', {
-      body: { 
-        action: 'crud',
+    try {
+      // Validate data before creating
+      const { validateRecord } = await import('./validation');
+      const validationResult = await validateRecord(table, data, 'create');
+      
+      if (!validationResult.isValid) {
+        logger.warn(`Validation failed for ${table} creation`, {
+          errors: validationResult.errors,
+          data
+        });
+        
+        return {
+          ok: false,
+          message: `Validation failed: ${validationResult.errors.map(e => e.message).join(', ')}`,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const operation: CRUDOperation = {
         table,
         operation: 'create',
-        ...data
-      },
-    });
+        data
+      };
+
+      const response = await this.enhancedService.executeOperation<T>(operation);
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      logger.error(`Failed to create ${table}`, error);
+      
+      // Fallback to legacy request method
+      return this.request<APIResponse<T>>('', {
+        body: { 
+          action: 'crud',
+          table,
+          operation: 'create',
+          ...data
+        },
+      });
+    }
   }
 
   async update<T>(table: string, id: string, data: Partial<T>): Promise<APIResponse<T>> {
-    return this.request<APIResponse<T>>('', {
-      body: { 
-        action: 'crud',
+    try {
+      // Get existing record for validation context
+      const existingRecord = await this.get<T>(table, id);
+      
+      // Validate data before updating
+      const { validateRecord } = await import('./validation');
+      const validationResult = await validateRecord(table, data, 'update');
+      
+      if (!validationResult.isValid) {
+        logger.warn(`Validation failed for ${table} update`, {
+          id,
+          errors: validationResult.errors,
+          data
+        });
+        
+        return {
+          ok: false,
+          message: `Validation failed: ${validationResult.errors.map(e => e.message).join(', ')}`,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const operation: CRUDOperation = {
         table,
         operation: 'update',
         id,
-        ...data
-      },
-    });
+        data: {
+          ...data,
+          // Include existing record data for business rule validation
+          _existingRecord: existingRecord.data
+        }
+      };
+
+      const response = await this.enhancedService.executeOperation<T>(operation);
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      logger.error(`Failed to update ${table} with id ${id}`, error);
+      
+      // Fallback to legacy request method
+      return this.request<APIResponse<T>>('', {
+        body: { 
+          action: 'crud',
+          table,
+          operation: 'update',
+          id,
+          ...data
+        },
+      });
+    }
   }
 
   async delete(table: string, id: string): Promise<APIResponse> {
-    return this.request<APIResponse>('', {
-      body: { 
-        action: 'crud',
+    try {
+      const operation: CRUDOperation = {
         table,
         operation: 'delete',
         id
-      },
-    });
+      };
+
+      const response = await this.enhancedService.executeOperation(operation);
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      logger.error(`Failed to delete ${table} with id ${id}`, error);
+      
+      // Fallback to legacy request method
+      return this.request<APIResponse>('', {
+        body: { 
+          action: 'crud',
+          table,
+          operation: 'delete',
+          id
+        },
+      });
+    }
   }
 
   /**
@@ -443,6 +620,176 @@ class APIClient {
   // Get time entries for a specific project
   async getProjectTimeEntries(projectId: string) {
     return this.list<TimeEntry>('Horas', { q: `proyecto_id:${projectId}` });
+  }
+
+  /**
+   * Enhanced operations using the improved Google Sheets service
+   */
+
+  // Batch operations for bulk data processing with performance optimization
+  async batchCreate<T>(table: string, records: Partial<T>[]): Promise<APIResponse<T[]>> {
+    const endTiming = performanceMonitor.startTiming(`batch-create-${table}`);
+    
+    try {
+      // Use optimized sheets service for better performance
+      const response = await optimizedSheetsService.bulkCreate<T>(table, records);
+      
+      endTiming(true, undefined, { table, recordCount: records.length });
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message || (response.ok ? 'All operations completed successfully' : 'Some operations failed'),
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      endTiming(false, error instanceof Error ? error.message : 'Unknown error', { table, recordCount: records.length });
+      logger.error(`Failed to batch create ${table}`, error);
+      
+      // Fallback to individual operations
+      try {
+        const operations: CRUDOperation[] = records.map(data => ({
+          table,
+          operation: 'create',
+          data
+        }));
+
+        const responses = await this.enhancedService.batchOperations<T>(operations);
+        
+        const successfulResults = responses.filter(r => r.ok).map(r => r.data).filter(Boolean);
+        const hasErrors = responses.some(r => !r.ok);
+        
+        return {
+          ok: !hasErrors,
+          data: successfulResults,
+          message: hasErrors ? 'Some operations failed' : 'All operations completed successfully',
+          timestamp: new Date().toISOString()
+        };
+      } catch (fallbackError) {
+        throw error;
+      }
+    }
+  }
+
+  async batchUpdate<T>(table: string, updates: Array<{ id: string; data: Partial<T> }>): Promise<APIResponse<T[]>> {
+    const endTiming = performanceMonitor.startTiming(`batch-update-${table}`);
+    
+    try {
+      // Use optimized sheets service for better performance
+      const response = await optimizedSheetsService.bulkUpdate<T>(table, updates);
+      
+      endTiming(true, undefined, { table, updateCount: updates.length });
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message || (response.ok ? 'All updates completed successfully' : 'Some updates failed'),
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      endTiming(false, error instanceof Error ? error.message : 'Unknown error', { table, updateCount: updates.length });
+      logger.error(`Failed to batch update ${table}`, error);
+      
+      // Fallback to individual operations
+      try {
+        const operations: CRUDOperation[] = updates.map(({ id, data }) => ({
+          table,
+          operation: 'update',
+          id,
+          data
+        }));
+
+        const responses = await this.enhancedService.batchOperations<T>(operations);
+        
+        const successfulResults = responses.filter(r => r.ok).map(r => r.data).filter(Boolean);
+        const hasErrors = responses.some(r => !r.ok);
+        
+        return {
+          ok: !hasErrors,
+          data: successfulResults,
+          message: hasErrors ? 'Some updates failed' : 'All updates completed successfully',
+          timestamp: new Date().toISOString()
+        };
+      } catch (fallbackError) {
+        throw error;
+      }
+    }
+  }
+
+  // Advanced filtering and search
+  async searchRecords<T>(
+    table: string, 
+    filters: Record<string, any>, 
+    options?: { 
+      limit?: number; 
+      page?: number; 
+      sortBy?: string; 
+      sortOrder?: 'asc' | 'desc' 
+    }
+  ): Promise<APIResponse<T[]>> {
+    try {
+      const operation: CRUDOperation = {
+        table,
+        operation: 'list',
+        filters,
+        pagination: options?.limit ? { 
+          page: options.page || 1, 
+          limit: options.limit 
+        } : undefined
+      };
+
+      const response = await this.enhancedService.executeOperation<T[]>(operation);
+      
+      return {
+        ok: response.ok,
+        data: response.data,
+        message: response.message,
+        timestamp: response.timestamp
+      };
+    } catch (error) {
+      logger.error(`Failed to search ${table}`, error);
+      throw error;
+    }
+  }
+
+  // Get service health and performance metrics
+  async getServiceHealth(): Promise<APIResponse<any>> {
+    try {
+      const isHealthy = await this.enhancedService.validateConnection();
+      const config = this.enhancedService.getConfig();
+      
+      return {
+        ok: true,
+        data: {
+          healthy: isHealthy,
+          config: {
+            timeout: config.timeout,
+            retryAttempts: config.retryAttempts,
+            cacheEnabled: config.cacheEnabled
+          },
+          timestamp: new Date().toISOString()
+        },
+        message: isHealthy ? 'Service is healthy' : 'Service has connectivity issues',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      logger.error('Failed to get service health', error);
+      return {
+        ok: false,
+        message: 'Failed to check service health',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  // Configure enhanced service settings
+  updateServiceConfig(config: {
+    timeout?: number;
+    retryAttempts?: number;
+    cacheEnabled?: boolean;
+  }): void {
+    this.enhancedService.updateConfig(config);
+    logger.info('APIClient service configuration updated', config);
   }
 }
 

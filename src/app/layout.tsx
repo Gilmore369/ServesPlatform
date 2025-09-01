@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "ServesPlatform",
+  title: process.env.NEXT_PUBLIC_APP_NAME || "ServesPlatform",
   description: "Gestión de Operaciones para Empresas de Servicios",
 };
 

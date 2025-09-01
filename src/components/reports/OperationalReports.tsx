@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/Loading';
 import { ExportCsv } from '@/components/ui/ExportCsv';
 import { ReportExporter } from '@/lib/exportUtils';

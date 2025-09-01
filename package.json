@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/prebuild.js",
-    "build": "npm run prebuild && next build",
+    "build": "next build",
     "build:vercel": "next build",
     "build:analyze": "cross-env ANALYZE=true npm run build",
     "build:production": "npm run clean && npm run validate && npm run test:unit && npm run build && npm run optimize",
@@ -34,8 +33,19 @@
     "deploy:vercel": "vercel --prod",
     "deploy:production": "npm run production-check && npm run deploy:vercel",
     "health-check": "curl -f http://localhost:3000/api/health || exit 1",
+    "test:api": "node scripts/test-api-connectivity.js",
+    "test:api:connectivity": "node scripts/test-api-connectivity.js --connectivity",
+    "test:api:cors": "node scripts/test-api-connectivity.js --cors",
+    "test:api:auth": "node scripts/test-api-connectivity.js --auth",
+    "test:api:crud": "node scripts/test-api-connectivity.js --crud",
     "monitor:logs": "tail -f .next/server.log",
-    "monitor:performance": "node scripts/performance-monitor.js"
+    "monitor:performance": "node scripts/performance-monitor.js",
+    "deploy:production": "node scripts/production-deploy.js",
+    "backup:create": "node scripts/backup-recovery.js create",
+    "backup:restore": "node scripts/backup-recovery.js restore",
+    "backup:list": "node scripts/backup-recovery.js list",
+    "monitoring:setup": "node scripts/monitoring-setup.js",
+    "system:comprehensive-test": "node scripts/comprehensive-system-test.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

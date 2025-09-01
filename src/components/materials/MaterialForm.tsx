@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Material } from '@/lib/types';
+import { SyncedForm } from '@/components/ui/SyncedForm';
+import { useMaterialsSync } from '@/hooks/useDataSync';
 
 interface MaterialFormProps {
   material?: Material | null;
-  onSave: (materialData: Partial<Material>) => void;
+  onSave: (materialData: Material) => void;
   onCancel: () => void;
 }
 
@@ -23,7 +25,9 @@ export function MaterialForm({ material, onSave, onCancel }: MaterialFormProps) 
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Use enhanced data sync
+  const materialsSync = useMaterialsSync();
 
   // Common categories for materials
   const commonCategories = [
@@ -127,29 +131,39 @@ export function MaterialForm({ material, onSave, onCancel }: MaterialFormProps) 
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Handle form submission with enhanced sync
+  const handleSubmit = async (data: Partial<Material>) => {
     if (!validateForm()) {
-      return;
+      throw new Error('Validation failed');
     }
 
-    setIsSubmitting(true);
-    try {
-      await onSave({
-        ...formData,
-        activo: true, // New materials are active by default
-      });
-    } catch (error) {
-      console.error('Error saving material:', error);
-    } finally {
-      setIsSubmitting(false);
+    const materialData = {
+      ...formData,
+      activo: true, // New materials are active by default
+    };
+
+    let result;
+    if (material) {
+      // Update existing material
+      result = await materialsSync.actions.update(material.id, materialData);
+    } else {
+      // Create new material
+      result = await materialsSync.actions.create(materialData);
     }
+
+    // Call success callback
+    onSave(result);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <SyncedForm
+      syncState={materialsSync.state}
+      syncActions={materialsSync.actions}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      submitLabel={material ? 'Actualizar Material' : 'Crear Material'}
+      className="space-y-6"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* SKU */}
         <div>
@@ -338,24 +352,6 @@ export function MaterialForm({ material, onSave, onCancel }: MaterialFormProps) 
         </div>
       </div>
 
-      {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-          disabled={isSubmitting}
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Guardando...' : (material ? 'Actualizar' : 'Crear')}
-        </button>
-      </div>
-    </form>
+    </SyncedForm>
   );
 }

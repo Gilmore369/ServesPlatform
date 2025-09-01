@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Material } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
 import { Loading } from '@/components/ui/Loading';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';

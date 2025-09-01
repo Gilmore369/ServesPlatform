@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { useActivities, usePersonnel, useMaterials } from '@/lib/hooks/useApi';
 import { useAuth } from '@/lib/auth';
 import { Activity, User, Material, Personnel } from '@/lib/types';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/apiClient';
+import { api } from '@/lib/api';
 import { Activity, User, ActivityChecklist, Evidence } from '@/lib/types';
 import { useActivityStateChangeValidation } from '@/lib/hooks/useBusinessRules';
 import { ValidationAlert } from '@/components/ui/ValidationAlert';
@@ -149,10 +149,10 @@ export function ActivityForm({ activity, projectId, users, checklist, evidence, 
       let response;
       if (activity) {
         // Update existing activity
-        response = await apiClient.updateActivity(activity.id, activityData);
+        response = await api.updateActivity(activity.id, activityData);
       } else {
         // Create new activity
-        response = await apiClient.createActivity(activityData);
+        response = await api.createActivity(activityData);
       }
 
       if (response.ok && response.data) {

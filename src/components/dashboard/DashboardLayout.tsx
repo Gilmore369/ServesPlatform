@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardTopBar } from './DashboardTopBar';
-import { useAuth } from '@/lib/auth';
+// import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayoutProps, Notification } from '@/lib/dashboard-types';
 
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {

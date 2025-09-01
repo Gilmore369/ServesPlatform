@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Personnel } from '@/lib/types';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { AssignmentManager } from './AssignmentManager';
 import { TimesheetEntry } from './TimesheetEntry';
 import { UtilizationReport } from './UtilizationReport';

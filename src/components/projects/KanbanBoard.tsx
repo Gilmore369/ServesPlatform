@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Activity, User } from '@/lib/types';
-import { apiClient } from '@/lib/apiClient';
-import { Badge } from '@/components/ui/Badge';
+import { api } from '@/lib/api';
+import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/Modal';
 import { ActivityForm } from './ActivityForm';
 import { ActivityDetail } from './ActivityDetail';
@@ -111,7 +111,7 @@ export function KanbanBoard({ activities, users, projectId, onUpdate }: KanbanBo
         estado: newStatus,
       };
 
-      const response = await apiClient.updateActivity(draggedActivity.id, updatedActivity);
+      const response = await api.updateActivity(draggedActivity.id, updatedActivity);
       
       if (response.ok) {
         onUpdate(); // Refresh activities
@@ -141,7 +141,7 @@ export function KanbanBoard({ activities, users, projectId, onUpdate }: KanbanBo
         estado: newStatus,
       };
 
-      const response = await apiClient.updateActivity(activity.id, updatedActivity);
+      const response = await api.updateActivity(activity.id, updatedActivity);
       
       if (response.ok) {
         onUpdate();

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Personnel } from '@/lib/types';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Table } from '@/components/ui/Table';
 import { 
   EyeIcon, 

@@ -140,16 +140,16 @@ export function DashboardSidebar({ isOpen, onClose, user }: SidebarProps) {
             <div className="flex-shrink-0">
               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-sm">
-                  {user.nombre.charAt(0).toUpperCase()}
+                  {(user?.name || user?.nombre || user?.email || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
             </div>
             <div className="ml-3 min-w-0 flex-1">
               <p className="text-sm font-medium text-white truncate">
-                {user.nombre}
+                {user?.name || user?.nombre || 'Usuario'}
               </p>
               <p className="text-xs text-blue-200 truncate">
-                {user.email}
+                {user?.email || 'Sin email'}
               </p>
             </div>
           </div>

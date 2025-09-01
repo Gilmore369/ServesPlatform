@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Personnel, Assignment, TimeEntry, Project } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { Badge } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/Loading';
 import { 
   ChartBarIcon,

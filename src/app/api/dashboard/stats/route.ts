@@ -4,7 +4,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function GET() {
   try {
-    const response = await fetch(`${API_BASE_URL}?action=getDashboardStats`, {
+    const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || 'demo-token-2024';
+    
+    const response = await fetch(`${API_BASE_URL}?action=getDashboardStats&token=${API_TOKEN}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

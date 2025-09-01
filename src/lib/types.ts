@@ -1,48 +1,242 @@
-// Core type definitions for ServesPlatform
+/**
+ * Core type definitions for ServesPlatform
+ * Standardized data models and API interfaces
+ * 
+ * This file contains all standardized TypeScript interfaces and types used throughout
+ * the ServesPlatform application. All interfaces follow consistent naming conventions
+ * and include comprehensive JSDoc documentation.
+ * 
+ * Requirements: 6.1, 6.2, 6.3
+ * @fileoverview Comprehensive type definitions for ServesPlatform
+ * @author ServesPlatform Development Team
+ * @version 2.1.0
+ */
 
+// =============================================================================
+// CORE API TYPES
+// =============================================================================
+
+/**
+ * Standard API response format used across all endpoints
+ * Provides consistent structure for all API responses with proper error handling
+ * 
+ * @template T - The type of data returned in the response
+ * @example
+ * ```typescript
+ * const response: APIResponse<User[]> = await api.getUsers();
+ * if (response.ok) {
+ *   console.log(response.data); // User[]
+ * }
+ * ```
+ */
 export interface APIResponse<T = any> {
+  /** Indicates if the operation was successful */
   ok: boolean;
+  /** The actual data payload */
   data?: T;
+  /** Human-readable message about the operation */
   message?: string;
+  /** ISO timestamp of when the response was generated */
   timestamp: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  user: User;
-  message?: string;
+// =============================================================================
+// AUTHENTICATION TYPES
+// =============================================================================
+
+/**
+ * Authentication response containing user data and JWT token
+ * Returned by the login endpoint upon successful authentication
+ * 
+ * @example
+ * ```typescript
+ * const authResponse: AuthResponse = await api.login(email, password);
+ * if (authResponse.ok) {
+ *   localStorage.setItem('token', authResponse.token);
+ *   setCurrentUser(authResponse.user);
+ * }
+ * ```
+ */
+export interface AuthResponse extends APIResponse<User> {
+  /** JWT token for authenticated requests */
+  token?: string;
+  /** Authenticated user information */
+  user?: User;
 }
 
+// =============================================================================
+// CORE ENTITY TYPES
+// =============================================================================
+
+/**
+ * User entity representing system users with roles and permissions
+ * Central entity for authentication and authorization throughout the system
+ * 
+ * @example
+ * ```typescript
+ * const user: User = {
+ *   id: 'user_001',
+ *   email: 'admin@example.com',
+ *   nombre: 'Administrator',
+ *   rol: 'admin',
+ *   activo: true,
+ *   created_at: new Date(),
+ *   updated_at: new Date()
+ * };
+ * ```
+ */
 export interface User {
+  /** Unique identifier for the user (format: user_XXXXXXXXX) */
   id: string;
+  /** User's email address (used for login, must be unique) */
   email: string;
+  /** Full name of the user */
   nombre: string;
-  rol: 'admin_lider' | 'admin' | 'editor' | 'tecnico';
+  /** User role determining system permissions */
+  rol: UserRole;
+  /** Whether the user account is active and can log in */
   activo: boolean;
+  /** JSON string containing user certifications and qualifications */
   certificaciones_json?: string;
+  /** Timestamp when the user account was created */
   created_at: Date;
+  /** Timestamp when the user account was last updated */
   updated_at: Date;
 }
 
+/**
+ * Available user roles in the system with hierarchical permissions
+ * Each role inherits permissions from lower-level roles
+ */
+export type UserRole = 'admin_lider' | 'admin' | 'editor' | 'tecnico';
+
+/**
+ * User role definitions with descriptions
+ */
+export const USER_ROLES: Record<UserRole, { name: string; description: string; level: number }> = {
+  admin_lider: {
+    name: 'Administrador Líder',
+    description: 'Acceso completo al sistema, gestión de usuarios y configuración',
+    level: 4
+  },
+  admin: {
+    name: 'Administrador',
+    description: 'Gestión de proyectos, materiales y reportes',
+    level: 3
+  },
+  editor: {
+    name: 'Editor',
+    description: 'Creación y edición de contenido, sin acceso administrativo',
+    level: 2
+  },
+  tecnico: {
+    name: 'Técnico',
+    description: 'Acceso de solo lectura y actualización de actividades asignadas',
+    level: 1
+  }
+};
+
+/**
+ * Project entity representing construction/service projects
+ * Central entity for project management with complete lifecycle tracking
+ * 
+ * @example
+ * ```typescript
+ * const project: Project = {
+ *   id: 'proj_001',
+ *   codigo: 'ELEC-2024-001',
+ *   nombre: 'Instalación Eléctrica Oficina Central',
+ *   cliente_id: 'client_001',
+ *   responsable_id: 'user_001',
+ *   ubicacion: 'Lima, Perú',
+ *   descripcion: 'Instalación completa del sistema eléctrico',
+ *   linea_servicio: 'Eléctrico',
+ *   inicio_plan: new Date('2024-01-15'),
+ *   fin_plan: new Date('2024-03-15'),
+ *   presupuesto_total: 50000,
+ *   moneda: 'PEN',
+ *   estado: 'En progreso',
+ *   avance_pct: 45,
+ *   created_at: new Date(),
+ *   updated_at: new Date()
+ * };
+ * ```
+ */
 export interface Project {
+  /** Unique identifier for the project (format: proj_XXXXXXXXX) */
   id: string;
+  /** Project code following company standards (e.g., ELEC-2024-001) */
   codigo: string;
+  /** Project name/title */
   nombre: string;
+  /** Reference to the client entity */
   cliente_id: string;
+  /** Reference to the responsible user/project manager */
   responsable_id: string;
+  /** Physical location where the project takes place */
   ubicacion: string;
+  /** Detailed project description */
   descripcion: string;
-  linea_servicio: string;
-  sla_objetivo: number;
+  /** Service line/category of the project */
+  linea_servicio: ServiceLine;
+  /** Planned start date */
   inicio_plan: Date;
+  /** Planned end date */
   fin_plan: Date;
+  /** Total project budget */
   presupuesto_total: number;
-  moneda: 'PEN' | 'USD';
-  estado: 'Planificación' | 'En progreso' | 'Pausado' | 'Cerrado';
+  /** Currency for budget and costs */
+  moneda: Currency;
+  /** Current project status */
+  estado: ProjectStatus;
+  /** Project completion percentage (0-100) */
   avance_pct: number;
+  /** Timestamp when the project was created */
   created_at: Date;
+  /** Timestamp when the project was last updated */
   updated_at: Date;
 }
+
+/**
+ * Available project statuses with workflow progression
+ */
+export type ProjectStatus = 'Planificación' | 'En progreso' | 'Pausado' | 'Cerrado';
+
+/**
+ * Available service lines for projects
+ */
+export type ServiceLine = 'Eléctrico' | 'Civil' | 'CCTV' | 'Mantenimiento' | 'Telecomunicaciones';
+
+/**
+ * Supported currencies in the system
+ */
+export type Currency = 'PEN' | 'USD';
+
+/**
+ * Project status definitions with descriptions
+ */
+export const PROJECT_STATUSES: Record<ProjectStatus, { name: string; description: string; color: string }> = {
+  'Planificación': {
+    name: 'Planificación',
+    description: 'Proyecto en fase de planificación y preparación',
+    color: '#fbbf24'
+  },
+  'En progreso': {
+    name: 'En Progreso',
+    description: 'Proyecto activo en ejecución',
+    color: '#3b82f6'
+  },
+  'Pausado': {
+    name: 'Pausado',
+    description: 'Proyecto temporalmente suspendido',
+    color: '#f59e0b'
+  },
+  'Cerrado': {
+    name: 'Cerrado',
+    description: 'Proyecto completado y cerrado',
+    color: '#10b981'
+  }
+};
 
 export interface Activity {
   id: string;
@@ -200,31 +394,62 @@ export interface TimeEntry {
   updated_at: Date;
 }
 
-// API Response types
-export interface APIResponse<T = unknown> {
+/**
+ * Enhanced API Response with metadata and pagination support
+ * Extends the basic APIResponse with additional metadata for performance monitoring
+ * and pagination information for large datasets
+ * 
+ * @template T - The type of data returned in the response
+ */
+export interface EnhancedAPIResponse<T = any> {
+  /** Indicates if the operation was successful */
   ok: boolean;
+  /** The actual data payload */
   data?: T;
+  /** Human-readable message about the operation */
   message?: string;
+  /** HTTP status code */
+  status: number;
+  /** ISO timestamp of when the response was generated */
+  timestamp: string;
+  /** Pagination information for list responses */
+  pagination?: PaginationInfo;
+  /** Additional metadata about the request/response */
+  metadata?: ResponseMetadata;
 }
 
-// Enhanced API Response with metadata and pagination
-export interface EnhancedAPIResponse<T = any> {
-  ok: boolean;
-  data?: T;
-  message?: string;
-  status: number;
-  timestamp: string;
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    hasNext: boolean;
-  };
-  metadata?: {
-    executionTime: number;
-    cacheHit: boolean;
-    version: string;
-  };
+/**
+ * Pagination information for paginated API responses
+ */
+export interface PaginationInfo {
+  /** Current page number (1-based) */
+  page: number;
+  /** Number of items per page */
+  limit: number;
+  /** Total number of items available */
+  total: number;
+  /** Whether there are more pages available */
+  hasNext: boolean;
+  /** Whether there are previous pages available */
+  hasPrevious: boolean;
+  /** Total number of pages */
+  totalPages: number;
+}
+
+/**
+ * Response metadata for performance monitoring and debugging
+ */
+export interface ResponseMetadata {
+  /** Request execution time in milliseconds */
+  executionTime: number;
+  /** Whether the response was served from cache */
+  cacheHit: boolean;
+  /** API version that handled the request */
+  version: string;
+  /** Unique request identifier for tracing */
+  requestId?: string;
+  /** Data source (e.g., 'google_sheets', 'cache', 'mock') */
+  source?: string;
 }
 
 export interface AuthResponse {

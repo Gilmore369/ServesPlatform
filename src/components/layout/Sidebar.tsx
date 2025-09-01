@@ -142,7 +142,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
             </div>
             <div className="ml-3">
-              <h1 className="text-lg font-semibold text-gray-900">ServesPlatform</h1>
+              <h1 className="text-lg font-semibold text-gray-900">
+                {process.env.NEXT_PUBLIC_APP_NAME || 'ServesPlatform'}
+              </h1>
             </div>
           </div>
           

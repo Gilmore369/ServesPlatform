@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
 import { apiClient } from '@/lib/apiClient';
 import { Personnel } from '@/lib/types';
 import { PersonnelList } from '@/components/personnel/PersonnelList';
